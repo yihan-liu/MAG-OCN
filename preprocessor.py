@@ -27,7 +27,7 @@ class AtomDataset(InMemoryDataset):
     def __init__(self, root, transform=None, pre_transform=None, threshold=2.0):
         """
         root: path containing the 'atoms.csv'
-        cutoff: distance threshold for constructing edges
+        threshold: distance threshold for constructing edges
         """
         self.threshold = threshold
         super().__init__(root, transform, pre_transform)
