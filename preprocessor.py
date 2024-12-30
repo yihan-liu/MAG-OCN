@@ -1,5 +1,6 @@
 
 import torch
+import torch.nn.functional as F
 from torch_geometric.data import Data, InMemoryDataset
 import numpy as np
 import pandas as pd
@@ -71,6 +72,7 @@ class AtomDataset(InMemoryDataset):
 
         # 3) Magnetic moment as labels (node-level)
         y = torch.tensor([df['MAGNETIC_MOMENT'].values[i] for i in range(len(df)) if df['ATOM'][i][0] in ATOM_TYPE_DICT], dtype=torch.float).view(-1, 1)
+        y = torch.sign(y) * torch.log1p(y.abs())  # y' = sign(y) * log(1 + |y|)
 
         data = Data(x=x, edge_index=self.edge_index, y=y)
 
