@@ -93,7 +93,10 @@ class RandomMicroPerturbation:
         # Add noise to magnetic moments
         # data.y typically has shape: (num_atoms,) or (num_atoms, 1)
         noise_moment = torch.randn_like(data.y) * self.moment_noise
-        data.y = data.y + noise_moment
+        candidate_y = data.y + noise_moment
+
+        sign_original = torch.sign(data.original_y)
+        data.y = sign_original * candidate_y.abs()
         return data
     
     @staticmethod
