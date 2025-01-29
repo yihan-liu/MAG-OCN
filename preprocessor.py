@@ -36,7 +36,7 @@ class AtomDataset(InMemoryDataset):
 
     @property
     def raw_file_names(self):
-        return ['atoms.csv']
+        return ['atoms2.csv']
     
     @property
     def processed_file_names(self):
