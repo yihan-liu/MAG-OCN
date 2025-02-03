@@ -1,3 +1,6 @@
+# preprocessor.py
+
+import os
 
 import torch
 import torch.nn.functional as F
@@ -25,22 +28,36 @@ def atom_type_to_onehot(element: str):
     return one_hot
 
 class AtomDataset(InMemoryDataset):
-    def __init__(self, root, transform=None, pre_transform=None, threshold=2.0):
+    def __init__(self, root, filename,
+                 transform=None, pre_transform=None, threshold=2.0):
         """
         root: path containing the 'atoms.csv'
         threshold: distance threshold for constructing edges
         """
         self.threshold = threshold
+        self.filename = filename
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     @property
     def raw_file_names(self):
-        return ['atoms2.csv']
+        # return the raw file name
+        return [self.filename]
     
     @property
     def processed_file_names(self):
-        return ['data.pt']
+        # return the processed file name
+        return [os.path.splitext(self.filename)[0] + '.pt']
+    
+    @property
+    def raw_dir(self):
+        # always look for raw data in the 'raw' folder
+        return os.path.join(self.root, 'raw')
+    
+    @property
+    def processed_dir(self):
+        # override to save the processed file to the specified
+        return os.path.join(self.root, 'processed')
     
     def process(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -143,4 +160,4 @@ class AtomDataset(InMemoryDataset):
         self.edge_index = torch.tensor(edges, dtype=torch.long).t()  # Shape (2, E)
 
 if __name__ == '__main__':
-    dataset = AtomDataset(root='./', threshold=2.0)
+    dataset = AtomDataset(root='./', filename='0v.csv', threshold=2.0)
