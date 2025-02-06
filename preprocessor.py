@@ -15,7 +15,7 @@ ATOM_TYPE_DICT = {
     'O': 2,
 }
 
-def atom_type_to_onehot(element: str):
+def atom_encode(element: str):
     """
     Convert e.g. 'N1' -> 'N' -> one-hot vector [1,0,0,0]
     """
@@ -62,58 +62,85 @@ class AtomDataset(InMemoryDataset):
     def process(self):
         df = pd.read_csv(self.raw_paths[0])
 
-        # 1) Collect node features
-        #    - we'll store [one-hot(atom_type), x, y, z]
-        node_features = []
-        atom_labels = []  # for edges generation
+        # Lists for measured (non-placeholder) nodes
+        measured_features = []  # each element: one_hot + [x, y, z]
+        measured_labels = []    # store atom type letter: 'N', 'C' or 'O'
+        measured_mags = []      # corresponding magnetic moment
+
+        # process each row of csv file
         for _, row in df.iterrows():
             atom_label = row['ATOM']  # e.g. 'N1'
-            one_hot = atom_type_to_onehot(atom_label[0])  # encode the element (atom_label[0]) 
+            atom_type = atom_label[0]
+            one_hot = atom_encode(atom_type)  # encode the element
             if one_hot is None:
                 continue  # skip atoms not in the dict
-            atom_labels.append(atom_label[0])
+            measured_labels.append(atom_label[0])
             # append coordinates
             coords = [row['X'], row['Y'], row['Z']]
-            node_features.append(one_hot + coords)
-
-        self.node_features = np.array(node_features)
-        self.atom_labels = np.array(atom_labels)
+            measured_features.append(one_hot + coords)
+            measured_labels.append(atom_type)
+            measured_mags.append(row['MAGNETIC_MOMENT'])
 
         # Normalize atom locations (only use translation)
-        self._normalize_atoms()  # update self.node_features
+        measured_features = np.array(measured_features)
+        coords = measured_features[:, -3:]
+        center = np.mean(coords, axis=0)
+        measured_features[:, -3:] = coords - center
 
+        # Padding: ensure each dataset has the same number of atoms
+        max_counts = {'N': 36, 'C': 24, 'O': 1}
+        counts = {atom: measured_labels.count(atom) for atom in ATOM_TYPE_DICT}
+
+        placeholder_features = []   # placeholder for node features
+        placeholder_labels = []     # corresponding atom type
+        placeholder_mags = []       # placeholders magnetic moment
+
+        for atom in ATOM_TYPE_DICT:
+            n_missing = max_counts[atom] - counts.get(atom, 0)
+            for _ in range(n_missing):
+                # for placeholders use the same one-hot for the atom
+                # zero coordinates, and a MM of -255
+                ph_feature = atom_encode(atom) + [0.0, 0.0, 0.0]
+                placeholder_features.append(ph_feature)
+                placeholder_labels.append(atom)
+                placeholder_mags.append(-255)
+
+        # Combine measured nodes with placeholders
+        self.node_features = np.vstack([measured_features, np.array(placeholder_features)]) if placeholder_features else measured_features
+        self.atom_labels = measured_labels + placeholder_labels
+
+        # Process MM
+        # for measured nodes, apply the transformation: y = sign(y) * log(1 + |y|)
+        measured_mags_tensor = torch.tensor(measured_mags, dtype=torch.float).view(-1, 1)
+        transformed_measured = torch.sign(measured_mags_tensor) * torch.log1p(torch.abs(measured_mags_tensor))
+        # for placeholder nodes, keep the value -255
+        placeholder_mags_tensor = torch.tensor(placeholder_mags, dtype=torch.float).view(-1, 1)
+        # concatenate
+        all_mags_tensor = torch.cat([transformed_measured, placeholder_mags_tensor], dim=0)
+
+        # save the number of measured nodes (used for edge generation)
+        self.measured_count = measured_features.shape[0]
+
+        # create the tensor for node features
         x = torch.tensor(self.node_features, dtype=torch.float)  # shape (num_nodes, 7)
+        
+        # Construct edge_index using only measured nodes
+        self._generate_edges()
 
-        # 2) Construct edge_index
-        self._generate_edges()  # generate self.edge_index
-
-        # 3) Magnetic moment as labels (node-level)
-        y = torch.tensor([df['MAGNETIC_MOMENT'].values[i] for i in range(len(df)) if df['ATOM'][i][0] in ATOM_TYPE_DICT], dtype=torch.float).view(-1, 1)
-        y = torch.sign(y) * torch.log1p(y.abs())  # y' = sign(y) * log(1 + |y|)
-
-        data = Data(x=x, edge_index=self.edge_index, y=y)
+        # Construct Data
+        data = Data(x=x, edge_index=self.edge_index, y=all_mags_tensor)
 
         data_list = [data]
         self.data, self.slices = self.collate(data_list)
         torch.save((self.data, self.slices), self.processed_paths[0])
-        
-    def _normalize_atoms(self):
-        """
-        Translate the atoms so their center is at (0, 0, 0)
-        """
-        atoms = self.node_features[:, -3:]  # shape: (n, 3)
-        center = np.mean(atoms, axis=0)
-        translated_atoms = atoms - center
-
-        self.node_features[:, -3:] = translated_atoms
 
     def _generate_edges(self):
         """
-        Build an edge index based on the following rules.
+        Build an edge index among the measured (non-placeholder) atoms based on the following rules.
         - Carbon atoms (C) form bonds with up to three nearest atoms (C, N, O) within the threshold.
         - Nitrogen atoms (N) form bonds with up to three nearest carbon atoms within the threshold.
         """
-        positions = self.node_features[:, -3:]
+        positions = self.node_features[:self.measured_count, -3:]
         num_nodes = positions.shape[0]
         edges = []
 
