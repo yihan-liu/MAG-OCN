@@ -62,10 +62,10 @@ class AtomDataset(InMemoryDataset):
     def process(self):
         df = pd.read_csv(self.raw_paths[0])
 
-        # Lists for measured (non-placeholder) nodes
-        measured_features = []  # each element: one_hot + [x, y, z]
-        measured_labels = []    # store atom type letter: 'N', 'C' or 'O'
-        measured_mags = []      # corresponding magnetic moment
+        # Lists for nodes
+        features = []   # each element: one_hot + [x, y, z]
+        labels = []     # store atom type letter: 'N', 'C' or 'O'
+        mags = []        # corresponding magnetic moment
 
         # process each row of csv file
         for _, row in df.iterrows():
@@ -74,52 +74,27 @@ class AtomDataset(InMemoryDataset):
             one_hot = atom_encode(atom_type)  # encode the element
             if one_hot is None:
                 continue  # skip atoms not in the dict
-            measured_labels.append(atom_label[0])
+            labels.append(atom_label[0])
             # append coordinates
             coords = [row['X'], row['Y'], row['Z']]
-            measured_features.append(one_hot + coords)
-            measured_labels.append(atom_type)
-            measured_mags.append(row['MAGNETIC_MOMENT'])
+            features.append(one_hot + coords)
+            labels.append(atom_type)
+            mags.append(row['MAGNETIC_MOMENT'])
 
         # Normalize atom locations (only use translation)
-        measured_features = np.array(measured_features)
-        coords = measured_features[:, -3:]
+        features = np.array(features)
+        coords = features[:, -3:]
         center = np.mean(coords, axis=0)
-        measured_features[:, -3:] = coords - center
-
-        # Padding: ensure each dataset has the same number of atoms
-        max_counts = {'N': 36, 'C': 24, 'O': 1}
-        counts = {atom: measured_labels.count(atom) for atom in ATOM_TYPE_DICT}
-
-        placeholder_features = []   # placeholder for node features
-        placeholder_labels = []     # corresponding atom type
-        placeholder_mags = []       # placeholders magnetic moment
-
-        for atom in ATOM_TYPE_DICT:
-            n_missing = max_counts[atom] - counts.get(atom, 0)
-            for _ in range(n_missing):
-                # for placeholders use the same one-hot for the atom
-                # zero coordinates, and a MM of -255
-                ph_feature = atom_encode(atom) + [0.0, 0.0, 0.0]
-                placeholder_features.append(ph_feature)
-                placeholder_labels.append(atom)
-                placeholder_mags.append(-255)
+        features[:, -3:] = coords - center
 
         # Combine measured nodes with placeholders
-        self.node_features = np.vstack([measured_features, np.array(placeholder_features)]) if placeholder_features else measured_features
-        self.atom_labels = measured_labels + placeholder_labels
+        self.node_features = features
+        self.atom_labels = labels
 
         # Process MM
         # for measured nodes, apply the transformation: y = sign(y) * log(1 + |y|)
-        measured_mags_tensor = torch.tensor(measured_mags, dtype=torch.float).view(-1, 1)
-        transformed_measured = torch.sign(measured_mags_tensor) * torch.log1p(torch.abs(measured_mags_tensor))
-        # for placeholder nodes, keep the value -255
-        placeholder_mags_tensor = torch.tensor(placeholder_mags, dtype=torch.float).view(-1, 1)
-        # concatenate
-        all_mags_tensor = torch.cat([transformed_measured, placeholder_mags_tensor], dim=0)
-
-        # save the number of measured nodes (used for edge generation)
-        self.measured_count = measured_features.shape[0]
+        mags_tensor = torch.tensor(mags, dtype=torch.float).view(-1, 1)
+        transformed_mags = torch.sign(mags_tensor) * torch.log1p(torch.abs(mags_tensor))
 
         # create the tensor for node features
         x = torch.tensor(self.node_features, dtype=torch.float)  # shape (num_nodes, 7)
@@ -128,7 +103,7 @@ class AtomDataset(InMemoryDataset):
         self._generate_edges()
 
         # Construct Data
-        data = Data(x=x, edge_index=self.edge_index, y=all_mags_tensor)
+        data = Data(x=x, edge_index=self.edge_index, y=transformed_mags)
 
         data_list = [data]
         self.data, self.slices = self.collate(data_list)
