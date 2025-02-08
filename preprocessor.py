@@ -2,6 +2,7 @@
 
 import os
 import copy
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -37,7 +38,7 @@ class NCOMoleculeDataset(Dataset):
                  filenames,
                  dataset_size=1000,
                  threshold=2.0,
-                 num_atoms_sample=16,
+                 num_atoms_in_sample=16,
                  augmentations=None):
         self.root = root
         if isinstance(filenames, str):
@@ -46,7 +47,7 @@ class NCOMoleculeDataset(Dataset):
             self.filenames = filenames
         self.dataset_size = dataset_size
         self.threshold = threshold
-        self.num_atoms_sample = num_atoms_sample
+        self.num_atoms_sample = num_atoms_in_sample
         self.augmentations = augmentations
 
         # Process and store each molecule
@@ -337,18 +338,37 @@ class NCOMoleculeDataset(Dataset):
         return sp_matrix
     
 if __name__ == '__main__':
-    root = './raw'
-    filenames = ['0v.csv', '1v.csv', '2v.csv']
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filenames', nargs='+',
+                        help='List of csv files to load.')
+    parser.add_argument('-r', '--root', default='.\\raw',
+                        help='Root folder for the data.')
+    parser.add_argument('-n', '--num-samples', type=int, default=1000,
+                        help='Number of samples to generate.')
+    parser.add_argument('-a', '--num-atoms-in-sample', type=int, default=16,
+                        help='Number of atoms in a sample.')
+    parser.add_argument('-p', '--num-print-samples', type=int, default=1,
+                        help='Number of samples to print in the terminal.')
+    args = parser.parse_args()
     
-    augmentation = None
-    dataset = NCOMoleculeDataset(root=root, filenames=filenames, dataset_size=1000,
-                                 threshold=2.0, num_atoms_sample=16, augmentations=augmentation)
+    root = args.root
+    filenames = args.filenames
+    num_samples = args.num_samples
+    num_atoms_in_sample = args.num_atoms_in_sample
+    num_print_samples = args.num_print_samples
+    
+    filenames = [fn + '.csv' for fn in filenames]
 
-    sample = dataset[0]
-    print("Features shape:", sample['features'].shape)
-    print(sample['features'])
-    print("Bond influence matrix shape:", sample['bond_influence'].shape)
-    print(sample['bond_influence'])
-    print("Targets shape:", sample['targets'].shape)
-    print(sample['targets'])
-    print("v_value:", sample['v_value'])
+    augmentation = None
+    dataset = NCOMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
+                                 threshold=2.0, num_atoms_in_sample=num_atoms_in_sample, augmentations=augmentation)
+
+    for idx in range(num_print_samples):
+        sample = dataset[idx]
+        print("Features shape:", sample['features'].shape)
+        print(sample['features'])
+        print("Bond influence matrix shape:", sample['bond_influence'].shape)
+        print(sample['bond_influence'])
+        print("Targets shape:", sample['targets'].shape)
+        print(sample['targets'])
+        print("v_value:", sample['v_value'])
