@@ -11,8 +11,9 @@ from torch.utils.data import Dataset
 from collections import deque
 
 from atoms_encoding import ATOM_DICT
+from randomizer import *
 
-class NCOMoleculeDataset(Dataset):
+class OCNMoleculeDataset(Dataset):
     '''
     Custom dataset for molecules designed for use with a Perceiver model.
     
@@ -107,6 +108,7 @@ class NCOMoleculeDataset(Dataset):
 
         features = []
         targets = []
+        mms = []
         atom_labels = []
         coords = []
 
@@ -121,8 +123,9 @@ class NCOMoleculeDataset(Dataset):
             x, y, z = row['X'], row['Y'], row['Z']
             coords.append([x, y, z])
             features.append(one_hot)
-            mms = row['MAGNETIC_MOMENT']
-            targets.append(self.normalize_mm(mms))
+            mm = row['MAGNETIC_MOMENT']
+            mms.append(mm)
+            targets.append(self.reduce_mm(mm))
 
         if len(coords) == 0:
             return None
@@ -135,7 +138,7 @@ class NCOMoleculeDataset(Dataset):
         # Combine the one-hot features with the normalized coordinates
         features = np.hstack([np.array(features, dtype=float), norm_coords])
         features = features.astype(np.float32)
-        
+        mms = np.array(mms)
         targets = np.array(targets)
 
         # Compute the bond connectivity matrix
@@ -144,6 +147,7 @@ class NCOMoleculeDataset(Dataset):
         molecule = {
             'features': features,           # (n_atoms, 6)
             'targets': targets,             # (n_atoms,)
+            'mms': mms,                     # (n_atoms,)
             'adjacency': adjacency,         # (n_atoms, n_atoms)
             'atom_labels': atom_labels,     # list of length n_atoms
             'v_values': v_values            # number of penta-rings from filename
@@ -242,6 +246,9 @@ class NCOMoleculeDataset(Dataset):
         # Randomly choose a molecule
         molecule = copy.deepcopy(np.random.choice(self.molecules))
 
+        # Save a copy of the original magnetic moment values
+        mms = copy.deepcopy(molecule['mms'])
+
         # Apply augmentations if provided
         if self.augmentations:
             if isinstance(self.augmentations, list):
@@ -263,12 +270,16 @@ class NCOMoleculeDataset(Dataset):
 
         selected_features = molecule['features'][selected_indices, :]   # (num_atoms_sample, 6)
         selected_targets = molecule['targets'][selected_indices]        # (num_atoms_sample,)
+        
+        # Retrieve original (unaugmented) MM for the same selected atoms
+        selected_mms = mms[selected_indices]
         bond_influence = self.get_bond_influence_matrix(molecule['adjacency'], selected_indices)
 
         sample = {
             'features': torch.tensor(selected_features, dtype=torch.float),
             'bond_influence': torch.tensor(bond_influence, dtype=torch.float),
             'targets': torch.tensor(selected_targets, dtype=torch.float),
+            'mms': torch.tensor(selected_mms, dtype=torch.float),
             'v_value': molecule.get('v_values', 0)  # number of penta-rings
         }
 
@@ -287,11 +298,18 @@ class NCOMoleculeDataset(Dataset):
         return one_hot
 
     @staticmethod
-    def normalize_mm(y):
+    def reduce_mm(y):
         '''
         Normalize the magnetic moment using: sign(y) * log(1 + |y|)
         '''
         return np.sign(y) * np.log1p(np.abs(y))
+    
+    @staticmethod
+    def recover_mm(y):
+        '''
+        Recover original magnetic moment using: sign(y) * (exp(|y'|) - 1)
+        '''
+        return np.sign(y) * np.expm1(np.abs(y))
     
     @staticmethod
     def get_distance(a1, a2):
@@ -359,9 +377,14 @@ if __name__ == '__main__':
     
     filenames = [fn + '.csv' for fn in filenames]
 
-    augmentation = None
-    dataset = NCOMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
-                                 threshold=2.0, num_atoms_in_sample=num_atoms_in_sample, augmentations=augmentation)
+    augmentations = [
+        OCNRandomTranslation(2.0),
+        OCNRandomRotation(),
+        OCNRandomReflection(),
+        OCNRandomMicroPerturbation(position_noise=0.01, moment_noise=0.01)
+    ]
+    dataset = OCNMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
+                                 threshold=2.0, num_atoms_in_sample=num_atoms_in_sample, augmentations=augmentations)
 
     for idx in range(num_print_samples):
         sample = dataset[idx]
@@ -371,4 +394,6 @@ if __name__ == '__main__':
         print(sample['bond_influence'])
         print("Targets shape:", sample['targets'].shape)
         print(sample['targets'])
+        print("Original targets shape:", sample['mms'].shape)
+        print(sample['mms'])
         print("v_value:", sample['v_value'])
