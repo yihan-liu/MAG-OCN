@@ -4,7 +4,7 @@ import argparse
 
 import pandas as pd
 
-def xlsx_to_multiple_csv(xlsx_path):
+def xls_to_multiple_csv(xlsx_path):
     # The desired new header
     new_header = ["ATOM", "X", "Y", "Z", "MAGNETIC_MOMENT"]
     
@@ -24,5 +24,5 @@ if __name__ == '__main__':
     parser.add_argument('--filepath', default=None,
                         help='Path to the xlsx file to convert.')
     args = parser.parse_args()
-    xlsx_to_multiple_csv(args.filepath)
+    xls_to_multiple_csv(args.filepath)
 
