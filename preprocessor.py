@@ -359,7 +359,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+',
                         help='List of csv files to load.')
-    parser.add_argument('-r', '--root', default='.\\raw',
+    parser.add_argument('-r', '--root', default='./raw',
                         help='Root folder for the data.')
     parser.add_argument('-n', '--num-samples', type=int, default=1000,
                         help='Number of samples to generate.')
