@@ -3,6 +3,8 @@
 import os
 import copy
 import argparse
+import hashlib
+import random
 
 import numpy as np
 import pandas as pd
@@ -40,7 +42,9 @@ class OCNMoleculeDataset(Dataset):
                  dataset_size=1000,
                  threshold=2.0,
                  num_atoms_in_sample=16,
-                 augmentations=None):
+                 augmentations=None,
+                 processed_dir='./processed',
+                 seed=42):
         self.root = root
         if isinstance(filenames, str):
             self.filenames = [filenames]
@@ -50,20 +54,44 @@ class OCNMoleculeDataset(Dataset):
         self.threshold = threshold
         self.num_atoms_sample = num_atoms_in_sample
         self.augmentations = augmentations
+        self.processed_dir = processed_dir
 
-        # Process and store each molecule
-        self.molecules = []
-        for fname in self.filenames:
-            filepath = os.path.join(root, fname)
-            molecule = self.get_molecule_from_file(filepath)
-            if molecule is not None:
-                self.molecules.append(molecule)
+        # Create a unique folder and filename for the processed dataset
+        # Folder name from filenames, joined by dashes
+        folder_name = "-".join([fn.replace('.csv', '') for fn in self.filenames])
+        dataset_dir = os.path.join(self.processed_dir, folder_name)
 
-        # Precompute each samples
-        self.samples = []
-        for _ in range(self.dataset_size):
-            sample = self.generate_samples()
-            self.samples.append(sample)
+        if not os.path.exists(dataset_dir):
+            os.makedirs(dataset_dir)
+
+        # Create a unique hash for the parameters based on user-specified order
+        filenames_str = "".join(self.filenames)
+        aug_str = str(self.augmentations is not None)
+        params_str = f"{filenames_str}_{dataset_size}_{num_atoms_in_sample}_{self.threshold}_{aug_str}_{seed}"
+        params_hash = hashlib.md5(params_str.encode()).hexdigest()
+        self.processed_filepath = os.path.join(dataset_dir, f"{params_hash}.pt")
+
+        if os.path.exists(self.processed_filepath):
+            print(f"Loading processed dataset from {self.processed_filepath}")
+            self.samples = torch.load(self.processed_filepath)
+        else:
+            print(f"Generating new dataset and saving to {self.processed_filepath}")
+            # Process and store each molecule
+            self.molecules = []
+            for fname in self.filenames:
+                filepath = os.path.join(root, fname)
+                molecule = self.get_molecule_from_file(filepath)
+                if molecule is not None:
+                    self.molecules.append(molecule)
+
+            # Precompute each samples
+            self.samples = []
+            for _ in range(self.dataset_size):
+                sample = self.generate_samples()
+                self.samples.append(sample)
+            
+            # Save the dataset
+            torch.save(self.samples, self.processed_filepath)
 
     def __len__(self):
         """
@@ -367,6 +395,10 @@ if __name__ == '__main__':
                         help='Number of atoms in a sample.')
     parser.add_argument('-p', '--num-print-samples', type=int, default=1,
                         help='Number of samples to print in the terminal.')
+    parser.add_argument('--processed-dir', default='./processed', help='Directory to save/load processed data.')
+    parser.add_argument('--seed', type=int, default=42, help='Random seed.')
+    parser.add_argument('--batch', action='store_true', help='Enable batch creation of processed datasets.')
+    parser.add_argument('--batch-size', type=int, default=1, help='Number of datasets to create in batch mode.')
     args = parser.parse_args()
     
     root = args.root
@@ -381,19 +413,33 @@ if __name__ == '__main__':
         OCNRandomTranslation(2.0),
         OCNRandomRotation(),
         OCNRandomReflection(),
-        OCNRandomMicroPerturbation(position_noise=0.01, moment_noise=0.01)
+        OCNRandomMicroPerturbation(position_noise=0.05, moment_noise=0.5)
     ]
-    dataset = OCNMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
-                                 threshold=2.0, num_atoms_in_sample=num_atoms_in_sample, augmentations=augmentations)
 
-    for idx in range(num_print_samples):
-        sample = dataset[idx]
-        print("Features shape:", sample['features'].shape)
-        print(sample['features'])
-        print("Bond influence matrix shape:", sample['bond_influence'].shape)
-        print(sample['bond_influence'])
-        print("Targets shape:", sample['targets'].shape)
-        print(sample['targets'])
-        print("Original targets shape:", sample['mms'].shape)
-        print(sample['mms'])
-        print("v_value:", sample['v_value'])
+    # Batch creation handling
+    if args.batch:
+        if args.seed != parser.get_default('seed'):
+            print("Warning: batch creation disables explicit seed selection; random seeds will be used per dataset.")
+        seeds = [random.randint(0, 2**32 - 1) for _ in range(args.batch_size)]
+        for batch_idx, seed_val in enumerate(seeds, start=1):
+            print(f"Batch {batch_idx}: using seed {seed_val}")
+            dataset = OCNMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
+                                        threshold=2.0, num_atoms_in_sample=num_atoms_in_sample,
+                                        augmentations=augmentations, processed_dir=args.processed_dir,
+                                        seed=seed_val)
+    else:
+        dataset = OCNMoleculeDataset(root=root, filenames=filenames, dataset_size=num_samples,
+                                    threshold=2.0, num_atoms_in_sample=num_atoms_in_sample,
+                                    augmentations=augmentations, processed_dir=args.processed_dir,
+                                    seed=args.seed)
+        for idx in range(num_print_samples):
+            sample = dataset[idx]
+            print("Features shape:", sample['features'].shape)
+            print(sample['features'])
+            print("Bond influence matrix shape:", sample['bond_influence'].shape)
+            print(sample['bond_influence'])
+            print("Targets shape:", sample['targets'].shape)
+            print(sample['targets'])
+            print("Original targets shape:", sample['mms'].shape)
+            print(sample['mms'])
+            print("v_value:", sample['v_value'])

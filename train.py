@@ -30,7 +30,8 @@ def main(args):
         dataset_size=args.num_samples,
         threshold=2.0,
         num_atoms_in_sample=args.num_atoms_in_sample,
-        augmentations=augmentations
+        augmentations=augmentations,
+        processed_dir=args.processed_dir
     )
 
     # Build test dataset from test_filenames (unknown datasets).
@@ -41,7 +42,8 @@ def main(args):
         dataset_size=int(args.num_samples // 10),
         threshold=2.0,
         num_atoms_in_sample=args.num_atoms_in_sample,
-        augmentations=None
+        augmentations=None,
+        processed_dir=args.processed_dir
     )
 
     # Split dataset into train and validation
@@ -227,6 +229,7 @@ if __name__ == '__main__':
     parser.add_argument('--train-filenames', nargs='+', help='List of csv files for training/validation.')
     parser.add_argument('--test-filenames', nargs='+', help='List of csv files for testing (unseen data).')
     parser.add_argument('-r', '--root', default='./raw', help='Root folder for the data.')
+    parser.add_argument('--processed-dir', default='./processed', help='Directory for processed data.')
 
     # Sample size
     parser.add_argument('-n', '--num-samples', type=int, default=1000, help='Number of samples to generate.')
