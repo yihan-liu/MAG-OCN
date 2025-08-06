@@ -1,0 +1,15 @@
+# Core dependencies for MAG-OCN molecular augmentation project
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+networkx>=3.0
+scikit-learn>=1.3.0
+
+# Optional dependencies for data processing
+openpyxl>=3.1.0  # For reading Excel files
+
+# Development dependencies
+pytest>=7.0.0
+jupyter>=1.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
