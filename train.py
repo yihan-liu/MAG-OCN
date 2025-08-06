@@ -8,9 +8,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from randomizer import *
-from preprocessor import OCNMoleculeDataset
-from model import OCNTransformer
+from data_util.randomizer import *
+from data_util.preprocessor import OCNMoleculeDataset
+from model.ocn_transformer import OCNTransformer
 from utils import *
 
 def main(args):
