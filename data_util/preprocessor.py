@@ -12,8 +12,8 @@ import torch
 from torch.utils.data import Dataset
 from collections import deque
 
-from atoms_encoding import ATOM_DICT
-from randomizer import *
+from .atoms_encoding import ATOM_DICT
+from .randomizer import *
 
 class OCNMoleculeDataset(Dataset):
     '''

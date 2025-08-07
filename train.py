@@ -1,19 +1,92 @@
 # train.py
+# Modified training protocol:
+# - Training datasets: All files ending with '_expanded.csv'
+# - Test datasets: All other CSV files in the raw directory
 
 import argparse
+import os
+import glob
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
+from prettytable import PrettyTable
 
 from data_util.randomizer import *
 from data_util.preprocessor import OCNMoleculeDataset
 from model.ocn_transformer import OCNTransformer
 from utils import *
 
+def print_model_info(model, args, train_size, val_size, test_size):
+    """Print model and training setup information in a formatted table."""
+    
+    # Model architecture table
+    arch_table = PrettyTable()
+    arch_table.field_names = ["Component", "Value"]
+    arch_table.add_row(["Model Type", "OCN Transformer"])
+    arch_table.add_row(["Number of Heads", args.n_heads])
+    arch_table.add_row(["Number of Layers", args.num_layers])
+    arch_table.add_row(["Total Parameters", f"{sum(p.numel() for p in model.parameters()):,}"])
+    arch_table.add_row(["Device", next(model.parameters()).device])
+    
+    # Training setup table
+    setup_table = PrettyTable()
+    setup_table.field_names = ["Parameter", "Value"]
+    setup_table.add_row(["Batch Size", args.batch_size])
+    setup_table.add_row(["Learning Rate", args.lr])
+    setup_table.add_row(["Epochs", args.epochs])
+    setup_table.add_row(["Num Atoms per Sample", args.num_atoms_in_sample])
+    setup_table.add_row(["Num Samples", args.num_samples])
+    
+    # Dataset size table
+    data_table = PrettyTable()
+    data_table.field_names = ["Dataset Split", "Size"]
+    data_table.add_row(["Training", train_size])
+    data_table.add_row(["Validation", val_size])
+    data_table.add_row(["Test", test_size])
+    
+    print("\n" + "="*50)
+    print("MODEL ARCHITECTURE")
+    print("="*50)
+    print(arch_table)
+    
+    print("\n" + "="*50)
+    print("TRAINING SETUP")
+    print("="*50)
+    print(setup_table)
+    
+    print("\n" + "="*50)
+    print("DATASET INFORMATION")
+    print("="*50)
+    print(data_table)
+    print("="*50 + "\n")
+
 def main(args):
+    # Automatically detect training and test files based on naming convention
+    # Training files: those ending with '_expanded.csv'
+    # Test files: all other csv files
+    
+    all_csv_files = glob.glob(os.path.join(args.root, '*.csv'))
+    
+    # Extract just the filenames without extension for the dataset loader
+    train_filenames = []
+    test_filenames = []
+    
+    for file_path in all_csv_files:
+        filename = os.path.basename(file_path)
+        filename_without_ext = filename[:-4]  # Remove '.csv'
+        
+        if filename.endswith('_expanded.csv'):
+            train_filenames.append(filename_without_ext)
+        else:
+            test_filenames.append(filename_without_ext)
+    
+    print(f"Training files detected: {train_filenames}")
+    print(f"Test files detected: {test_filenames}")
+    
     # Define the augmentations for the dataset.
     augmentations = [
         OCNRandomTranslation(2.0),
@@ -22,11 +95,11 @@ def main(args):
         OCNRandomMicroPerturbation(position_noise=0.01, moment_noise=0.01)
     ]
 
-    # Create the traindataset.
-    train_filenames = [fn + '.csv' for fn in args.train_filenames]
+    # Create the training dataset from expanded files.
+    train_csv_filenames = [fn + '.csv' for fn in train_filenames]
     dataset = OCNMoleculeDataset(
         root=args.root,
-        filenames=train_filenames,
+        filenames=train_csv_filenames,
         dataset_size=args.num_samples,
         threshold=2.0,
         num_atoms_in_sample=args.num_atoms_in_sample,
@@ -34,11 +107,11 @@ def main(args):
         processed_dir=args.processed_dir
     )
 
-    # Build test dataset from test_filenames (unknown datasets).
-    test_filenames = [fn + '.csv' for fn in args.test_filenames]
+    # Build test dataset from non-expanded files.
+    test_csv_filenames = [fn + '.csv' for fn in test_filenames]
     test_dataset = OCNMoleculeDataset(
         root=args.root,
-        filenames=test_filenames,
+        filenames=test_csv_filenames,
         dataset_size=int(args.num_samples // 10),
         threshold=2.0,
         num_atoms_in_sample=args.num_atoms_in_sample,
@@ -58,22 +131,16 @@ def main(args):
     # Test loader
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False) # Added batch_size and shuffle for consistency
 
-    # Print dataset shapes
-    print(f"Total dataset size: {len(dataset)}")
-    print(f"Train dataset size: {len(train_dataset)}")
-    print(f"Validation dataset size: {len(validate_dataset)}")
-    print(f"Test dataset size: {len(test_dataset)}")
-
     # Define model
     model = OCNTransformer(n_heads=args.n_heads, num_layers=args.num_layers)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    print(sum(p.numel() for p in model.parameters()))
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    print(model)
+    # Print formatted model and setup information
+    print_model_info(model, args, len(train_dataset), len(validate_dataset), len(test_dataset))
 
     train_losses = []
     train_r2s = []
@@ -225,15 +292,13 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # Filenames
-    parser.add_argument('--train-filenames', nargs='+', help='List of csv files for training/validation.')
-    parser.add_argument('--test-filenames', nargs='+', help='List of csv files for testing (unseen data).')
+    # Data directories
     parser.add_argument('-r', '--root', default='./raw', help='Root folder for the data.')
     parser.add_argument('--processed-dir', default='./processed', help='Directory for processed data.')
 
     # Sample size
     parser.add_argument('-n', '--num-samples', type=int, default=1000, help='Number of samples to generate.')
-    parser.add_argument('-a', '--num-atoms-in-sample', type=int, default=16, help='Number of atoms in a sample.')
+    parser.add_argument('-a', '--num-atoms-in-sample', type=int, default=32, help='Number of atoms in a sample.')
 
     # Training parameters
     parser.add_argument('--batch-size', type=int, default=32, help='Batch size for training.')
