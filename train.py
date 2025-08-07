@@ -14,6 +14,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from prettytable import PrettyTable
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from data_util.randomizer import *
 from data_util.preprocessor import OCNMoleculeDataset
@@ -233,7 +234,14 @@ def main(args):
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
+    # Add learning rate scheduler
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3, verbose=True)
+    
+    # Early stopping parameters
+    best_val_loss = float('inf')
+    patience_counter = 0
+    early_stop_patience = 10
+    
     # Print formatted model and setup information
     print_model_info(model, args, len(train_dataset), len(validate_dataset), len(test_dataset))
 
@@ -334,6 +342,19 @@ def main(args):
             'Val Loss': f'{epoch_val_loss:.4f}',
             'Val R2': f'{epoch_val_r2:.4f}'
         })
+        
+        # Early stopping check
+        if epoch_val_loss < best_val_loss:
+            best_val_loss = epoch_val_loss
+            patience_counter = 0
+            # Save best model
+            torch.save(model.state_dict(), 'best_model.pth')
+        else:
+            patience_counter += 1
+            
+        if patience_counter >= early_stop_patience:
+            print(f"\nEarly stopping triggered after {epoch} epochs")
+            break
 
         # Every 10 epochs (and at the final epoch), print progress using tqdm.write
         if epoch % 10 == 0 or epoch == args.epochs:
@@ -373,6 +394,9 @@ def main(args):
                 f"Validate Loss: {epoch_val_loss:.4f}, Validate R2: {epoch_val_r2:.4f}, "
                 f"Test Loss: {epoch_test_loss:.4f}, Test R2: {epoch_test_r2:.4f}"
             )
+
+        # Step the scheduler based on validation loss
+        scheduler.step(epoch_val_loss)
 
     # Save metric to a file
     np.savez('metrics/metrics.npz',
