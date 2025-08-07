@@ -23,7 +23,7 @@ from utils import *
 def print_model_info(model, args, train_size, val_size, test_size):
     """Print model and training setup information in a formatted table."""
     
-    # Model architecture table
+    # Model architecture summary table
     arch_table = PrettyTable()
     arch_table.field_names = ["Component", "Value"]
     arch_table.add_row(["Model Type", "OCN Transformer"])
@@ -31,6 +31,95 @@ def print_model_info(model, args, train_size, val_size, test_size):
     arch_table.add_row(["Number of Layers", args.num_layers])
     arch_table.add_row(["Total Parameters", f"{sum(p.numel() for p in model.parameters()):,}"])
     arch_table.add_row(["Device", next(model.parameters()).device])
+    
+    # Detailed layer-by-layer information
+    layer_table = PrettyTable()
+    layer_table.field_names = ["Layer/Block", "Type", "Input Shape", "Output Shape", "Parameters"]
+    
+    def format_shape(shape):
+        """Format tensor shape for display"""
+        if isinstance(shape, (list, tuple)):
+            return f"[{', '.join(map(str, shape))}]"
+        return str(shape)
+    
+    def count_parameters(module):
+        """Count parameters in a module"""
+        return sum(p.numel() for p in module.parameters() if p.requires_grad)
+    
+    # Input projection layer
+    input_proj = model.input_projection
+    layer_table.add_row([
+        "Input Projection",
+        "Linear",
+        "[B, N, 6]",
+        f"[B, N, {input_proj.out_features}]",
+        f"{count_parameters(input_proj):,}"
+    ])
+    
+    # Transformer blocks
+    for i, block in enumerate(model.transformer_blocks):
+        block_name = f"Transformer Block {i+1}"
+        d_model = block.attn.d_model
+        n_heads = block.attn.n_heads
+        
+        # Self-attention layer
+        layer_table.add_row([
+            f"  ├─ Self-Attention",
+            f"MultiHead (h={n_heads})",
+            f"[B, N, {d_model}]",
+            f"[B, N, {d_model}]",
+            f"{count_parameters(block.attn):,}"
+        ])
+        
+        # Layer norm 1
+        layer_table.add_row([
+            f"  ├─ LayerNorm 1",
+            "LayerNorm",
+            f"[B, N, {d_model}]",
+            f"[B, N, {d_model}]",
+            f"{count_parameters(block.norm1):,}"
+        ])
+        
+        # Feed-forward network
+        ffn_layers = list(block.ffn.children())
+        ffn_params = count_parameters(block.ffn)
+        layer_table.add_row([
+            f"  ├─ Feed-Forward",
+            f"Linear→ReLU→Linear",
+            f"[B, N, {d_model}]",
+            f"[B, N, {d_model}]",
+            f"{ffn_params:,}"
+        ])
+        
+        # Layer norm 2
+        layer_table.add_row([
+            f"  └─ LayerNorm 2",
+            "LayerNorm",
+            f"[B, N, {d_model}]",
+            f"[B, N, {d_model}]",
+            f"{count_parameters(block.norm2):,}"
+        ])
+        
+        # Block summary
+        block_params = count_parameters(block)
+        layer_table.add_row([
+            f"{block_name} Total",
+            "Transformer Block",
+            f"[B, N, {d_model}]",
+            f"[B, N, {d_model}]",
+            f"{block_params:,}"
+        ])
+        layer_table.add_row(["", "", "", "", ""])  # Empty row for spacing
+    
+    # Output layer
+    out_layer = model.out_layer
+    layer_table.add_row([
+        "Output Layer",
+        "Linear",
+        f"[B, N, {out_layer.in_features}]",
+        "[B, N, 1]",
+        f"{count_parameters(out_layer):,}"
+    ])
     
     # Training setup table
     setup_table = PrettyTable()
@@ -48,21 +137,27 @@ def print_model_info(model, args, train_size, val_size, test_size):
     data_table.add_row(["Validation", val_size])
     data_table.add_row(["Test", test_size])
     
-    print("\n" + "="*50)
-    print("MODEL ARCHITECTURE")
-    print("="*50)
+    print("\n" + "="*70)
+    print("MODEL ARCHITECTURE SUMMARY")
+    print("="*70)
     print(arch_table)
     
-    print("\n" + "="*50)
+    print("\n" + "="*70)
+    print("DETAILED LAYER INFORMATION")
+    print("="*70)
+    print("Legend: B=Batch Size, N=Number of Atoms")
+    print(layer_table)
+    
+    print("\n" + "="*70)
     print("TRAINING SETUP")
-    print("="*50)
+    print("="*70)
     print(setup_table)
     
-    print("\n" + "="*50)
+    print("\n" + "="*70)
     print("DATASET INFORMATION")
-    print("="*50)
+    print("="*70)
     print(data_table)
-    print("="*50 + "\n")
+    print("="*70 + "\n")
 
 def main(args):
     # Automatically detect training and test files based on naming convention
