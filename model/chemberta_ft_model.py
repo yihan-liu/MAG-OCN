@@ -71,18 +71,20 @@ class MAGChemBERTa(nn.Module):
             Normalised (x, y, z) of each atom.
         token2atom : list[int]
             ``token2atom[i] = j`` means token *i* corresponds to atom *j*.
-            Should only map chemical tokens (skip [CLS], [SEP], etc.).
+            Should include mappings for all L tokens.
         coord_mlp : nn.Module
             Projection network from 3D → hidden_size.
         """
         device = last_hidden.device
         coord_emb = coord_mlp(coords.to(device))  # [N, H]
         
-        # Skip first ([CLS]) and last ([SEP]) tokens - only add coords to chemical tokens
-        for tok_idx, atom_idx in enumerate(token2atom):
-            if tok_idx > 0 and tok_idx < len(token2atom) - 1:  # Skip special tokens
-                if atom_idx < len(coord_emb):  # Bounds check
-                    last_hidden[tok_idx] += coord_emb[atom_idx]
+        # Add coordinate embeddings to corresponding tokens
+        seq_len = last_hidden.size(0)
+        for tok_idx in range(min(len(token2atom), seq_len)):
+            atom_idx = token2atom[tok_idx]
+            # Skip [CLS] (idx 0) and [SEP] (last token), and ensure valid atom index
+            if tok_idx > 0 and tok_idx < seq_len - 1 and atom_idx < len(coord_emb):
+                last_hidden[tok_idx] += coord_emb[atom_idx]
 
     @staticmethod
     def get_tokenizer(pretrained_name: str = 'seyonec/ChemBERTa-zinc-base-v1'):
@@ -142,14 +144,36 @@ class MAGChemBERTa(nn.Module):
         
         if token2atom is not None:
             for b, mapping in enumerate(token2atom):
+                # Map token representations back to atom representations
                 for tok_idx, atom_idx in enumerate(mapping):
-                    # Skip special tokens ([CLS] at 0, [SEP] at end) when mapping back to atoms
-                    if tok_idx > 0 and tok_idx < len(mapping) - 1:  # Only chemical tokens
-                        if tok_idx < L and atom_idx < max_atoms:
-                            atom_h[b, atom_idx] = hidden[b, tok_idx]
+                    # Skip [CLS] (tok_idx=0) and [SEP] (tok_idx=len-1), only use chemical tokens
+                    if (tok_idx > 0 and 
+                        tok_idx < len(mapping) - 1 and 
+                        tok_idx < L and 
+                        atom_idx < max_atoms):
+                        atom_h[b, atom_idx] = hidden[b, tok_idx]
+                        
+                # For atoms that don't have corresponding tokens (due to truncation),
+                # use a weighted average of available token representations
+                used_atoms = set()
+                for tok_idx, atom_idx in enumerate(mapping):
+                    if tok_idx > 0 and tok_idx < len(mapping) - 1 and atom_idx < max_atoms:
+                        used_atoms.add(atom_idx)
+                
+                # Fill missing atoms with average representation from chemical tokens
+                if len(used_atoms) < max_atoms:
+                    # Get average of chemical token representations (excluding [CLS] and [SEP])
+                    chemical_tokens = hidden[b, 1:-1, :]  # Skip first and last tokens
+                    if chemical_tokens.size(0) > 0:
+                        avg_repr = chemical_tokens.mean(dim=0)
+                        for atom_idx in range(max_atoms):
+                            if atom_idx not in used_atoms:
+                                atom_h[b, atom_idx] = avg_repr
         else:
             # fallback: use token embeddings directly (skip first/last for special tokens)
-            atom_h = hidden[:, 1:-1, :]  # Skip [CLS] and [SEP]
+            available_tokens = min(L - 2, max_atoms)  # -2 for [CLS] and [SEP]
+            if available_tokens > 0:
+                atom_h[:, :available_tokens, :] = hidden[:, 1:1+available_tokens, :]
 
         mm_pred = self.mm_head(atom_h).squeeze(-1)  # [B, N]
         return mm_pred
