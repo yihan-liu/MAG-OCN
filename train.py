@@ -18,10 +18,18 @@ def train(args):
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    # Add .csv extension to filenames if not present
+    csv_filenames = []
+    for fname in args.filenames:
+        if not fname.endswith('.csv'):
+            csv_filenames.append(fname + '.csv')
+        else:
+            csv_filenames.append(fname)
+    
     # Load dataset
     ds = OCNMoleculeDataset(
         root=args.root,
-        filenames=args.filenames,
+        filenames=csv_filenames,
         processed_dir=args.processed_dir,
         augmentations=None,
     )
@@ -71,7 +79,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train ChemBERTa with OCN data")
     parser.add_argument('--root', default='./raw')
-    parser.add_argument('--filenames', nargs='+', required=True, help='List of CSV files with molecule data')
+    parser.add_argument('--filenames', nargs='+', required=True, help='List of CSV files with molecule data (extension optional)')
     parser.add_argument('--processed-dir', default='./processed', help='Directory to save processed data')
     parser.add_argument('--batch-size', type=int, default=32, help='Batch size for training')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
