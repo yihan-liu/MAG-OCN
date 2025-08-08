@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModel, AutoTokenizer
 
-class ChemBERTaWithCoords(nn.Module):
-    """ChemBERTa encoder *augmented* with learnable 3D coordinate embeddings.
+class MAGChemBERTa(nn.Module):
+    """ChemBERTa encoder *augmented* with learnable 3D coordinate embeddings for magnetic moment prediction.
 
     The pretrained chemical language model provides rich contextual features for
     atom *identities* (via the SMILES string). We project each atom's (x, y, z)

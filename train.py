@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from data_util.preprocessor import OCNMoleculeDataset
-from model.chemberta_ft_model import ChemBERTaWithCoords
+from model.chemberta_ft_model import MAGChemBERTa
 from utils import mol_to_explicit_smiles, token2atom_mapping, collate
 
 def train(args):
@@ -26,7 +26,7 @@ def train(args):
         augmentations=None,
     )
 
-    tokenizer = ChemBERTaWithCoords.get_tokenizer(args.pretrained)
+    tokenizer = MAGChemBERTa.get_tokenizer(args.pretrained)
 
     dl = DataLoader(
         ds,
@@ -35,7 +35,7 @@ def train(args):
         collate_fn=lambda x: collate(x, tokenizer)
     )
 
-    model = ChemBERTaWithCoords(pretrained_name=args.pretrained, lora_r=8).to(device)
+    model = MAGChemBERTa(pretrained_name=args.pretrained, lora_r=8).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     for epoch in range(1, args.epochs + 1):

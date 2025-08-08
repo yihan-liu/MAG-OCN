@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
 from data_util.preprocessor import OCNMoleculeDataset
-from model.chemberta_ft_model import ChemBERTaWithCoords
+from model.chemberta_ft_model import MAGChemBERTa
 from utils import mol_to_explicit_smiles, token2atom_mapping, collate
 
 def test_single_molecule():
@@ -51,7 +51,7 @@ def test_single_molecule():
     
     # Test tokenization
     print("=== Tokenization ===")
-    tokenizer = ChemBERTaWithCoords.get_tokenizer()
+    tokenizer = MAGChemBERTa.get_tokenizer()
     tokens = tokenizer.tokenize(smiles)
     print(f"Tokens: {tokens}")
     print(f"Number of tokens: {len(tokens)}")
@@ -103,7 +103,7 @@ def test_batch_collate():
     print()
     
     # Test collate function
-    tokenizer = ChemBERTaWithCoords.get_tokenizer()
+    tokenizer = MAGChemBERTa.get_tokenizer()
     
     print("=== Individual SMILES Generation ===")
     for i, mol in enumerate(batch):
@@ -148,11 +148,11 @@ def test_model_forward():
     )
     
     batch = [ds[0]]  # Single molecule
-    tokenizer = ChemBERTaWithCoords.get_tokenizer()
+    tokenizer = MAGChemBERTa.get_tokenizer()
     collated = collate(batch, tokenizer)
     
     print("=== Model Creation ===")
-    model = ChemBERTaWithCoords(pretrained_name='seyonec/ChemBERTa-zinc-base-v1', lora_r=8)
+    model = MAGChemBERTa(pretrained_name='seyonec/ChemBERTa-zinc-base-v1', lora_r=8)
     model.eval()  # Set to evaluation mode
     
     print("=== Forward Pass ===")
