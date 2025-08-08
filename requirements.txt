@@ -1,0 +1,9 @@
+torch>=1.13.0
+transformers>=4.20.0
+rdkit-pypi>=2022.9.1
+pandas>=1.5.0
+numpy>=1.23.0
+matplotlib>=3.5.0
+peft>=0.4.0
+torch-geometric>=2.1.0
+scikit-learn>=1.1.0
