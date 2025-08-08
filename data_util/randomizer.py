@@ -1,94 +1,93 @@
 # randomizer.py
 
-import copy
+import torch
 import numpy as np
+from typing import Optional
 
-class OCNRandomTranslation:
-    """
-    Randomly translates all atom positions by a vector within a specified range.
-    """
-    def __init__(self, max_translation=2.0):
-        self.max_translation = max_translation
+from .graph_utils import _build_adjacency, _all_pairs_shortest_paths
 
-    def __call__(self, molecule):
-        # Generate a random translation vector
-        translation = np.random.uniform(-self.max_translation, self.max_translation, size=(1, 3))
-        molecule['features'][:, 3:6] += translation
-        return molecule
-    
+__all__ = ['OCNRandomRotation', 'OCNRandomReflection', 'OCNRandomMicroPerturbation']
+
 class OCNRandomRotation:
+    """Randomly rotate a molecule in 3D space.
+
+    Rotation matrices are sampled uniformly from SO(3) by composing three
+    uniform angles.  Distances—and therefore *adjacency* and *SPD*—stay intact,
+    so no graph recomputation is required.
     """
-    Randomly rotates the molecule in 3D space.
-    """
-    def __init__(self):
-        pass
+    def __call__(self, mol: dict) -> dict:
+        coords = mol['coords']  # torch view, no copy
 
-    def __call__(self, molecule):
-        coords = molecule['features'][:, 3:6]
+        # generate Euler angles
+        ax, ay, az = torch.rand(3) * 2 * np.pi
+        Rx = torch.tensor([
+            [1, 0, 0],
+            [0, torch.cos(ax), -torch.sin(ax)],
+            [0, torch.sin(ax),  torch.cos(ax)],
+        ])
+        Ry = torch.tensor([
+            [ torch.cos(ay), 0, torch.sin(ay)],
+            [0, 1, 0],
+            [-torch.sin(ay), 0, torch.cos(ay)],
+        ])
+        Rz = torch.tensor([
+            [torch.cos(az), -torch.sin(az), 0],
+            [torch.sin(az),  torch.cos(az), 0],
+            [0, 0, 1],
+        ])
 
-        # Generate the angles
-        angle_x = np.random.rand() * 2 * np.pi
-        angle_y = np.random.rand() * 2 * np.pi
-        angle_z = np.random.rand() * 2 * np.pi
-
-        Rx = np.array([[1, 0, 0],
-                       [0, np.cos(angle_x), -np.sin(angle_x)],
-                       [0, np.sin(angle_x), np.cos(angle_x)]])
-        
-        Ry = np.array([[np.cos(angle_y), 0, np.sin(angle_y)],
-                       [0, 1, 0],
-                       [-np.sin(angle_y), 0, np.cos(angle_y)]])
-        
-        Rz = np.array([[np.cos(angle_z), -np.sin(angle_z), 0],
-                       [np.sin(angle_z), np.cos(angle_z), 0],
-                       [0, 0, 1]])
-        
-        R = Rx @ Ry @ Rz  # full 3D rotation matrix
-
-        coords_rotated = coords @ R.T
-        molecule['features'][:, 3:6] = coords_rotated
-        return molecule
+        R = Rx @ Ry @ Rz  # [3,3]
+        mol["coords"] = coords @ R.T
+        return mol
     
 class OCNRandomReflection:
-    """
-    Randomly mirrors the molecule across a plane
-    """
-    def __init__(self):
-        pass
+    """Mirror the molecule across a random coordinate plane (X, Y or Z)."""
 
-    def __call__(self, molecule):
-        coords = molecule['features'][:, 3:6]
-
-        # Generate the reflection plane
-        axis = np.random.randint(0, 3)  # 0=X, 1=Y, 2=Z
-        coords[:, axis] *= -1  # flip the chosen coord axis
-
-        molecule['features'][:, 3:6] = coords
-        return molecule
+    def __call__(self, mol: dict) -> dict:
+        axis = torch.randint(0, 3, (1,)).item()  # 0,1,2
+        mol['coords'][:, axis] *= -1  # flip sign along chosen axis
+        return mol
     
 class OCNRandomMicroPerturbation:
+    """Apply small Gaussian noise to coordinates **and** magnetic moments.
+
+    Because coordinate noise breaks the original bond distances, we
+    *recompute* the adjacency & SPD matrices so they remain consistent.
+
+    Parameters
+    ----------
+    position_noise : float, default 0.01 Å
+        Standard deviation of the isotropic Gaussian noise added to each atom
+        coordinate.
+    moment_noise : float, default 0.03 (log-scaled units)
+        Std-dev of the Gaussian noise added to the *reduced* magnetic moment
+        targets (``mol['targets']``).
+    thresh : float, default 2.0 Å
+        Distance cut-off passed to the rule-based bonding function.
     """
-    A transform that applies micro-level perturbations to atom positions (x, y, z)
-    and the target magnetic moment.
-    
-    Args:
-        position_noise (float): Standard deviation of Gaussian noise for positions.
-        moment_noise (float): Standard deviation of Gaussian noise for magnetic moments.
-    """
-    def __init__(self, position_noise=0.01, moment_noise=0.01):
+
+    def __init__(self, position_noise: float = 0.01, moment_noise: float = 0.03, threshold: float = 2.0):
         self.position_noise = position_noise
         self.moment_noise = moment_noise
+        self.threshold = threshold
 
-    def __call__(self, molecule):
-        # Add noise to coordinates
-        coords = molecule['features'][:, 3:6]
-        noise_coords = np.random.randn(*coords.shape) * self.position_noise
-        molecule['features'][:, 3:6] = coords + noise_coords
+    def __call__(self, mol: dict) -> dict:
+        # coordinate jitter
+        coords = mol["coords"]
+        mol["coords"] = coords + torch.randn_like(coords) * self.position_noise
 
-        # Add noise to magnetic moments
-        noise_mm = np.random.randn(*molecule['targets'].shape) * self.moment_noise
-        candidate_mm = molecule['targets'] + noise_mm
+        # recompute adjacency & SPD (CPU numpy)
+        new_coords = mol["coords"].cpu().numpy()
+        labels = mol["atom_labels"]
+        adj = _build_adjacency(new_coords, labels, self.threshold)
+        spd = _all_pairs_shortest_paths(adj)
+        mol['bonds'] = torch.from_numpy(adj).float()
+        mol['spd'] = torch.from_numpy(spd).float()
 
-        sign_original = np.sign(molecule['targets'])
-        molecule['targets'] = sign_original * np.abs(candidate_mm)
-        return molecule
+        # magnetic-moment jitter
+        if self.moment_noise > 0:
+            noise = torch.randn_like(mol["mm_reduced"]) * self.moment_noise
+            candidate = mol["mm_reduced"] + noise
+            mol["mm_reduced"] = torch.sign(mol["mm_reduced"]) * torch.abs(candidate)
+
+        return mol
