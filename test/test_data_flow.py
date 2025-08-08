@@ -16,9 +16,9 @@ def test_single_molecule():
     
     # Load a small dataset (just one file)
     ds = OCNMoleculeDataset(
-        root='../raw',
+        root='./raw',
         filenames=['5v.csv'],  # Start with one file
-        processed_dir='../processed',
+        processed_dir='./processed',
         augmentations=None,
     )
     
@@ -87,9 +87,9 @@ def test_batch_collate():
     
     # Load dataset
     ds = OCNMoleculeDataset(
-        root='../raw',
+        root='./raw',
         filenames=['5v.csv'],
-        processed_dir='../processed',
+        processed_dir='./processed',
         augmentations=None,
     )
     
@@ -141,9 +141,9 @@ def test_model_forward():
     
     # Get collated batch
     ds = OCNMoleculeDataset(
-        root='../raw',
+        root='./raw',
         filenames=['5v.csv'],
-        processed_dir='../processed',
+        processed_dir='./processed',
         augmentations=None,
     )
     
