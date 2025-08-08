@@ -25,13 +25,27 @@ def mol_to_explicit_smiles(adj, atom_labels) -> str:
     mol = rdmolops.AddHs(mol, addCoords=False)  # add implicit hydrogens
     return rdmolfiles.MolToSmiles(mol, isomericSmiles=True)
 
-def token2atom_mapping(smiles: str, tokenizer, n_atoms: int) -> List[int]:
-    """Map tokens to atoms in the SMILES string.
+def token2atom_mapping(smiles: str, tokenizer, n_atoms: int, max_length: int = 512) -> List[int]:
+    """Map tokens to atoms in the SMILES string, handling truncation.
     
     This is a simplified mapping that assumes token order roughly matches atom order.
     For more accurate mapping, we'd need a proper SMILES parser.
+    
+    Args:
+        smiles: SMILES string
+        tokenizer: HuggingFace tokenizer
+        n_atoms: Number of atoms in the molecule
+        max_length: Maximum sequence length (including special tokens)
     """
     tokens = tokenizer.tokenize(smiles)
+    
+    # Account for [CLS] and [SEP] tokens in max_length
+    max_content_tokens = max_length - 2
+    
+    # Truncate tokens if necessary
+    if len(tokens) > max_content_tokens:
+        tokens = tokens[:max_content_tokens]
+        print(f"Warning: Truncating SMILES from {len(tokenizer.tokenize(smiles))} to {len(tokens)} tokens")
     
     # Simple heuristic: map tokens to atoms cyclically, skipping special tokens
     mapping = []
@@ -48,10 +62,10 @@ def token2atom_mapping(smiles: str, tokenizer, n_atoms: int) -> List[int]:
     # Add mappings for [CLS] and [SEP] tokens that tokenizer adds
     full_mapping = [0] + mapping + [0]  # [CLS] + tokens + [SEP]
     
-    return full_mapping[:len(tokens) + 2]  # Ensure correct length
+    return full_mapping
 
-def collate(batch: List[dict], tokenizer) -> dict:
-    """Custom collate function to handle variable-size molecules."""
+def collate(batch: List[dict], tokenizer, max_length: int = 512) -> dict:
+    """Custom collate function to handle variable-size molecules with sequence length limits."""
     B = len(batch)
     N_max = max(mol['coords'].size(0) for mol in batch)
 
@@ -68,13 +82,23 @@ def collate(batch: List[dict], tokenizer) -> dict:
 
         smiles = mol_to_explicit_smiles(mol['bonds'], mol['atom_labels'])
         smiles_list.append(smiles)
-        token2atom_list.append(token2atom_mapping(smiles, tokenizer, N))
+        
+        # Generate token2atom mapping with truncation awareness
+        token2atom = token2atom_mapping(smiles, tokenizer, N, max_length)
+        token2atom_list.append(token2atom)
     
-    tok = tokenizer(smiles_list, return_tensors='pt', padding=True)
+    # Tokenize with truncation to handle long sequences
+    tok = tokenizer(
+        smiles_list, 
+        return_tensors='pt', 
+        padding=True, 
+        truncation=True, 
+        max_length=max_length
+    )
+    
     return {
         'input_ids': tok['input_ids'],
         'attention_mask': tok['attention_mask'],
-
         'coords': coords_pad,
         'mm_reduced': mm_reduced_pad,
         'mask': mask_pad,
