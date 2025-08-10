@@ -17,3 +17,12 @@ prompt.md
 
 # results
 metrics/
+
+# Model checkpoints and training logs (large files)
+checkpoints/
+logs/
+
+# Large model files
+*.pt
+*.pth
+*.bin
