@@ -211,8 +211,7 @@ def train(args):
             optimizer, 
             mode='min', 
             patience=args.lr_patience, 
-            factor=args.lr_factor,
-            verbose=True
+            factor=args.lr_factor
         )
         
     except Exception as e:
@@ -252,7 +251,16 @@ def train(args):
                 try:
                     # Move tensors to device, but keep token2atom as list
                     token2atom = batch.pop('token2atom')
-                    batch = {k: v.to(device) for k, v in batch.items()}
+                    
+                    # Handle optional non-tensor keys
+                    optional_keys = ['segment_ids', 'original_indices']
+                    optional_data = {}
+                    for key in optional_keys:
+                        if key in batch:
+                            optional_data[key] = batch.pop(key)
+                    
+                    # Move only tensor data to device
+                    batch = {k: v.to(device) if hasattr(v, 'to') else v for k, v in batch.items()}
                     
                     mm_pred = model(
                         input_ids=batch['input_ids'],
