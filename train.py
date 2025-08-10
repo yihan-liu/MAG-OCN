@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from data_util.preprocessor import OCNMoleculeDataset
+from data_util.preprocessor import OCNMoleculeDataset, OCNSpatialSegmentDataset
 from model.chemberta_ft_model import MAGChemBERTa
 from utils import mol_to_explicit_smiles, token2atom_mapping, collate
 
@@ -26,12 +26,13 @@ def train(args):
         else:
             csv_filenames.append(fname)
     
-    # Load dataset
-    ds = OCNMoleculeDataset(
+    # Load dataset with spatial segmentation
+    ds = OCNSpatialSegmentDataset(
         root=args.root,
         filenames=csv_filenames,
         processed_dir=args.processed_dir,
         augmentations=None,
+        max_atoms_per_segment=args.max_atoms_per_segment,
     )
 
     tokenizer = MAGChemBERTa.get_tokenizer(args.pretrained)
@@ -85,6 +86,8 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--pretrained', default='seyonec/ChemBERTa-zinc-base-v1', help='Pretrained ChemBERTa model name')
+    parser.add_argument('--max-atoms-per-segment', type=int, default=100, 
+                        help='Maximum atoms per spatial segment (affects max token length)')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
     args = parser.parse_args()
 
