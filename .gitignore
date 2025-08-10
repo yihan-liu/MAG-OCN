@@ -22,7 +22,6 @@ metrics/
 checkpoints/
 logs/
 
-# Large model files
-*.pt
+# Large model files (*.pt handled by Git LFS)
 *.pth
 *.bin
