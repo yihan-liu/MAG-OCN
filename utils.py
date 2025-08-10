@@ -26,15 +26,16 @@ def mol_to_explicit_smiles(adj, atom_labels) -> str:
     return rdmolfiles.MolToSmiles(mol, isomericSmiles=True)
 
 def token2atom_mapping(smiles: str, tokenizer, n_atoms: int, max_length: int = 512) -> List[int]:
-    """Map tokens to atoms in the SMILES string, handling truncation.
+    """Map tokens to atoms in the SMILES string, handling spatial segments better.
     
-    This is a simplified mapping that assumes token order roughly matches atom order.
-    For more accurate mapping, we'd need a proper SMILES parser.
+    For spatially segmented molecules, we have fewer atoms per segment so truncation
+    is less likely to be an issue. This mapping assumes token order roughly matches
+    atom order within the spatial segment.
     
     Args:
-        smiles: SMILES string
+        smiles: SMILES string for the spatial segment
         tokenizer: HuggingFace tokenizer
-        n_atoms: Number of atoms in the molecule
+        n_atoms: Number of atoms in this spatial segment
         max_length: Maximum sequence length (including special tokens)
     """
     tokens = tokenizer.tokenize(smiles)
@@ -42,22 +43,26 @@ def token2atom_mapping(smiles: str, tokenizer, n_atoms: int, max_length: int = 5
     # Account for [CLS] and [SEP] tokens in max_length
     max_content_tokens = max_length - 2
     
-    # Truncate tokens if necessary
+    # For spatial segments, we should rarely need truncation since segments are smaller
     if len(tokens) > max_content_tokens:
         tokens = tokens[:max_content_tokens]
-        print(f"Warning: Truncating SMILES from {len(tokenizer.tokenize(smiles))} to {len(tokens)} tokens")
+        print(f"Warning: Truncating segment SMILES from {len(tokenizer.tokenize(smiles))} to {len(tokens)} tokens")
     
-    # Simple heuristic: map tokens to atoms cyclically, skipping special tokens
+    # Improved mapping: distribute tokens more evenly across atoms
     mapping = []
-    atom_idx = 0
     
-    for i, token in enumerate(tokens):
-        # Skip special tokens like [CLS], [SEP], [PAD]
-        if token.startswith('[') and token.endswith(']'):
-            mapping.append(0)  # Default to first atom for special tokens
-        else:
-            mapping.append(atom_idx % n_atoms)
-            atom_idx += 1
+    if len(tokens) == 0:
+        mapping = [0]  # Fallback for empty tokenization
+    else:
+        # Map tokens to atoms more evenly using interpolation
+        for i, token in enumerate(tokens):
+            # Skip special tokens like [CLS], [SEP], [PAD]
+            if token.startswith('[') and token.endswith(']'):
+                mapping.append(0)  # Default to first atom for special tokens
+            else:
+                # Map token index to atom index proportionally
+                atom_idx = int((i / len(tokens)) * n_atoms) % n_atoms
+                mapping.append(atom_idx)
     
     # Add mappings for [CLS] and [SEP] tokens that tokenizer adds
     full_mapping = [0] + mapping + [0]  # [CLS] + tokens + [SEP]
@@ -65,15 +70,17 @@ def token2atom_mapping(smiles: str, tokenizer, n_atoms: int, max_length: int = 5
     return full_mapping
 
 def collate(batch: List[dict], tokenizer, max_length: int = 512) -> dict:
-    """Custom collate function to handle variable-size molecules with sequence length limits."""
+    """Custom collate function for spatial segments with optimized padding."""
     B = len(batch)
     N_max = max(mol['coords'].size(0) for mol in batch)
 
     coords_pad = torch.zeros(B, N_max, 3)         # [B, N_max, 3]
-    mm_reduced_pad = torch.zeros(B, N_max)           # [B, N_max]
+    mm_reduced_pad = torch.zeros(B, N_max)        # [B, N_max]
     mask_pad = torch.zeros(B, N_max, dtype=torch.bool)  # [B, N_max]
 
     smiles_list, token2atom_list = [], []
+    segment_ids, original_indices_list = [], []
+    
     for b, mol in enumerate(batch):
         N = mol['coords'].size(0)
         coords_pad[b, :N] = mol['coords']
@@ -83,9 +90,15 @@ def collate(batch: List[dict], tokenizer, max_length: int = 512) -> dict:
         smiles = mol_to_explicit_smiles(mol['bonds'], mol['atom_labels'])
         smiles_list.append(smiles)
         
-        # Generate token2atom mapping with truncation awareness
+        # Generate improved token2atom mapping for spatial segments
         token2atom = token2atom_mapping(smiles, tokenizer, N, max_length)
         token2atom_list.append(token2atom)
+        
+        # Store segment metadata if available
+        if 'segment_id' in mol:
+            segment_ids.append(mol['segment_id'])
+        if 'original_indices' in mol:
+            original_indices_list.append(mol['original_indices'])
     
     # Tokenize with truncation to handle long sequences
     tok = tokenizer(
@@ -96,7 +109,7 @@ def collate(batch: List[dict], tokenizer, max_length: int = 512) -> dict:
         max_length=max_length
     )
     
-    return {
+    result = {
         'input_ids': tok['input_ids'],
         'attention_mask': tok['attention_mask'],
         'coords': coords_pad,
@@ -104,3 +117,11 @@ def collate(batch: List[dict], tokenizer, max_length: int = 512) -> dict:
         'mask': mask_pad,
         'token2atom': token2atom_list,
     }
+    
+    # Add segment metadata to batch if available
+    if segment_ids:
+        result['segment_ids'] = torch.tensor(segment_ids, dtype=torch.long)
+    if original_indices_list:
+        result['original_indices'] = original_indices_list
+    
+    return result
