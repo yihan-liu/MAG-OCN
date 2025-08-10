@@ -69,7 +69,16 @@ def validate_model(model, dataloader, device, logger):
         for batch in pbar:
             try:
                 token2atom = batch.pop('token2atom')
-                batch = {k: v.to(device) for k, v in batch.items()}
+                
+                # Handle optional non-tensor keys
+                optional_keys = ['segment_ids', 'original_indices']
+                optional_data = {}
+                for key in optional_keys:
+                    if key in batch:
+                        optional_data[key] = batch.pop(key)
+                
+                # Move only tensor data to device
+                batch = {k: v.to(device) if hasattr(v, 'to') else v for k, v in batch.items()}
                 
                 mm_pred = model(
                     input_ids=batch['input_ids'],
@@ -90,7 +99,7 @@ def validate_model(model, dataloader, device, logger):
                 pbar.set_postfix({'Loss': f'{current_avg_loss:.4f}'})
                 
             except Exception as e:
-                logger.warning(f"Validation batch failed: {e}")
+                pbar.write(f"Validation batch failed: {e}")
                 continue
     
     avg_loss = total_loss / max(total_samples, 1)
@@ -150,10 +159,15 @@ def train(args):
         
         # Split dataset for training and validation if requested
         if args.val_split > 0:
-            val_size = int(len(ds) * args.val_split)
+            val_size = max(1, int(len(ds) * args.val_split))  # Ensure at least 1 validation sample
             train_size = len(ds) - val_size
-            train_ds, val_ds = torch.utils.data.random_split(ds, [train_size, val_size])
-            logger.info(f"Dataset split: {train_size} training, {val_size} validation")
+            
+            if val_size >= len(ds):
+                logger.warning(f"Validation split too large for dataset size {len(ds)}, using no validation")
+                train_ds, val_ds = ds, None
+            else:
+                train_ds, val_ds = torch.utils.data.random_split(ds, [train_size, val_size])
+                logger.info(f"Dataset split: {train_size} training, {val_size} validation")
         else:
             train_ds, val_ds = ds, None
             logger.info("No validation split used")
@@ -292,15 +306,14 @@ def train(args):
                         'LR': f'{optimizer.param_groups[0]["lr"]:.6f}'
                     })
                     
-                    # Log batch metrics
+                    # Log batch metrics using tqdm.write to avoid interrupting progress bar
                     if (batch_idx + 1) % args.log_interval == 0:
-                        logger.info(
-                            f"Epoch {epoch:02d}, Batch {batch_idx+1}/{len(train_dl)}, "
-                            f"Loss: {current_loss:.4f}, LR: {optimizer.param_groups[0]['lr']:.6f}"
-                        )
+                        log_msg = (f"Epoch {epoch:02d}, Batch {batch_idx+1}/{len(train_dl)}, "
+                                  f"Loss: {current_loss:.4f}, LR: {optimizer.param_groups[0]['lr']:.6f}")
+                        pbar.write(log_msg)
                         
                 except Exception as e:
-                    logger.warning(f"Training batch {batch_idx} failed: {e}")
+                    pbar.write(f"Training batch {batch_idx} failed: {e}")
                     continue
             
             # Calculate epoch metrics
@@ -397,7 +410,7 @@ if __name__ == '__main__':
     # System arguments
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
     parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
-    parser.add_argument('--log-interval', type=int, default=50, help='Logging interval in batches')
+    parser.add_argument('--log-interval', type=int, default=100, help='Logging interval in batches')
     
     # Checkpoint and logging arguments
     parser.add_argument('--checkpoint-dir', default='./checkpoints', 
