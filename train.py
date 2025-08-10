@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from data_util.preprocessor import OCNSpatialSegmentDataset
 from model.chemberta_ft_model import MAGChemBERTa
@@ -61,8 +62,11 @@ def validate_model(model, dataloader, device, logger):
     total_loss = 0
     total_samples = 0
     
+    # Create progress bar for validation
+    pbar = tqdm(dataloader, desc="Validation", leave=False)
+    
     with torch.no_grad():
-        for batch in dataloader:
+        for batch in pbar:
             try:
                 token2atom = batch.pop('token2atom')
                 batch = {k: v.to(device) for k, v in batch.items()}
@@ -80,6 +84,10 @@ def validate_model(model, dataloader, device, logger):
                 
                 total_loss += loss.item() * mask.sum().item()
                 total_samples += mask.sum().item()
+                
+                # Update progress bar with current loss
+                current_avg_loss = total_loss / max(total_samples, 1)
+                pbar.set_postfix({'Loss': f'{current_avg_loss:.4f}'})
                 
             except Exception as e:
                 logger.warning(f"Validation batch failed: {e}")
@@ -237,7 +245,10 @@ def train(args):
         epoch_start_time = time.time()
         
         try:
-            for batch_idx, batch in enumerate(train_dl):
+            # Create progress bar for training batches
+            pbar = tqdm(train_dl, desc=f"Epoch {epoch:02d}/{args.epochs}", leave=True)
+            
+            for batch_idx, batch in enumerate(pbar):
                 try:
                     # Move tensors to device, but keep token2atom as list
                     token2atom = batch.pop('token2atom')
@@ -266,9 +277,15 @@ def train(args):
                     total_mm += loss.item() * mask.sum().item()
                     n_tokens += mask.sum().item()
                     
+                    # Update progress bar with current loss
+                    current_loss = total_mm / max(n_tokens, 1)
+                    pbar.set_postfix({
+                        'Loss': f'{current_loss:.4f}',
+                        'LR': f'{optimizer.param_groups[0]["lr"]:.6f}'
+                    })
+                    
                     # Log batch metrics
                     if (batch_idx + 1) % args.log_interval == 0:
-                        current_loss = total_mm / max(n_tokens, 1)
                         logger.info(
                             f"Epoch {epoch:02d}, Batch {batch_idx+1}/{len(train_dl)}, "
                             f"Loss: {current_loss:.4f}, LR: {optimizer.param_groups[0]['lr']:.6f}"
