@@ -19,8 +19,8 @@ prompt.md
 metrics/
 
 # Model checkpoints and training logs (large files)
-checkpoints/
-logs/
+# checkpoints/
+# logs/
 
 # Large model files (*.pt handled by Git LFS)
 *.pth

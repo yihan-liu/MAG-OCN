@@ -1,0 +1,260 @@
+2025-08-10 12:31:03,586 - INFO - Starting training with spatial segmentation
+2025-08-10 12:31:03,586 - INFO - Arguments: {'root': './raw', 'filenames': ['1v_expanded', '2v_expanded', '4v_expanded', '6v_expanded', '8v_expanded', '10v_expanded'], 'processed_dir': './processed', 'val_split': 0.0, 'pretrained': 'seyonec/ChemBERTa-zinc-base-v1', 'max_atoms_per_segment': 64, 'max_length': 512, 'lora_r': 8, 'batch_size': 4, 'epochs': 100, 'lr': 0.0001, 'weight_decay': 0.01, 'grad_clip': 1.0, 'lr_patience': 3, 'lr_factor': 0.5, 'early_stop_patience': 10, 'seed': 42, 'num_workers': 0, 'log_interval': 100, 'checkpoint_dir': './checkpoints', 'log_dir': './logs', 'resume': False}
+2025-08-10 12:31:03,625 - INFO - Using device: cuda
+2025-08-10 12:31:03,627 - INFO - Loading files: ['1v_expanded.csv', '2v_expanded.csv', '4v_expanded.csv', '6v_expanded.csv', '8v_expanded.csv', '10v_expanded.csv']
+2025-08-10 12:31:03,633 - INFO - Dataset loaded: 24 spatial segments
+2025-08-10 12:31:03,633 - INFO - No validation split used
+2025-08-10 12:31:09,205 - INFO - Tokenizer loaded: seyonec/ChemBERTa-zinc-base-v1
+2025-08-10 12:31:09,205 - INFO - Data loaders created: 6 training batches
+2025-08-10 12:31:13,240 - INFO - Model initialized with LoRA r=8
+2025-08-10 12:31:13,242 - INFO - Starting training loop
+2025-08-10 12:31:16,565 - INFO - Epoch 01 | Train Loss: 3.6001 | Time: 3.32s
+2025-08-10 12:31:17,074 - INFO - New best model saved with loss: 3.6001
+2025-08-10 12:31:19,844 - INFO - Epoch 02 | Train Loss: 3.1436 | Time: 2.77s
+2025-08-10 12:31:20,301 - INFO - New best model saved with loss: 3.1436
+2025-08-10 12:31:23,093 - INFO - Epoch 03 | Train Loss: 2.9390 | Time: 2.79s
+2025-08-10 12:31:23,519 - INFO - New best model saved with loss: 2.9390
+2025-08-10 12:31:26,355 - INFO - Epoch 04 | Train Loss: 2.8919 | Time: 2.83s
+2025-08-10 12:31:26,791 - INFO - New best model saved with loss: 2.8919
+2025-08-10 12:31:29,560 - INFO - Epoch 05 | Train Loss: 2.8318 | Time: 2.77s
+2025-08-10 12:31:29,990 - INFO - New best model saved with loss: 2.8318
+2025-08-10 12:31:32,820 - INFO - Epoch 06 | Train Loss: 2.8261 | Time: 2.82s
+2025-08-10 12:31:33,187 - INFO - New best model saved with loss: 2.8261
+2025-08-10 12:31:36,007 - INFO - Epoch 07 | Train Loss: 2.7551 | Time: 2.82s
+2025-08-10 12:31:36,466 - INFO - New best model saved with loss: 2.7551
+2025-08-10 12:31:39,241 - INFO - Epoch 08 | Train Loss: 2.7466 | Time: 2.77s
+2025-08-10 12:31:39,657 - INFO - New best model saved with loss: 2.7466
+2025-08-10 12:31:42,466 - INFO - Epoch 09 | Train Loss: 2.7643 | Time: 2.81s
+2025-08-10 12:31:45,369 - INFO - Epoch 10 | Train Loss: 2.7952 | Time: 2.69s
+2025-08-10 12:31:48,318 - INFO - Epoch 11 | Train Loss: 2.7706 | Time: 2.72s
+2025-08-10 12:31:51,209 - INFO - Epoch 12 | Train Loss: 2.7531 | Time: 2.67s
+2025-08-10 12:31:54,112 - INFO - Epoch 13 | Train Loss: 2.6596 | Time: 2.69s
+2025-08-10 12:31:54,541 - INFO - New best model saved with loss: 2.6596
+2025-08-10 12:31:57,348 - INFO - Epoch 14 | Train Loss: 2.7114 | Time: 2.81s
+2025-08-10 12:32:00,356 - INFO - Epoch 15 | Train Loss: 2.6622 | Time: 2.80s
+2025-08-10 12:32:03,328 - INFO - Epoch 16 | Train Loss: 2.6756 | Time: 2.75s
+2025-08-10 12:32:06,345 - INFO - Epoch 17 | Train Loss: 2.6125 | Time: 2.77s
+2025-08-10 12:32:06,839 - INFO - New best model saved with loss: 2.6125
+2025-08-10 12:32:09,608 - INFO - Epoch 18 | Train Loss: 2.6861 | Time: 2.77s
+2025-08-10 12:32:12,649 - INFO - Epoch 19 | Train Loss: 2.6501 | Time: 2.78s
+2025-08-10 12:32:15,693 - INFO - Epoch 20 | Train Loss: 2.6469 | Time: 2.78s
+2025-08-10 12:32:18,734 - INFO - Epoch 21 | Train Loss: 2.6162 | Time: 2.81s
+2025-08-10 12:32:21,773 - INFO - Epoch 22 | Train Loss: 2.6288 | Time: 2.81s
+2025-08-10 12:32:24,811 - INFO - Epoch 23 | Train Loss: 2.6065 | Time: 2.80s
+2025-08-10 12:32:25,289 - INFO - New best model saved with loss: 2.6065
+2025-08-10 12:32:28,045 - INFO - Epoch 24 | Train Loss: 2.6241 | Time: 2.75s
+2025-08-10 12:32:31,037 - INFO - Epoch 25 | Train Loss: 2.6183 | Time: 2.75s
+2025-08-10 12:32:34,053 - INFO - Epoch 26 | Train Loss: 2.6418 | Time: 2.80s
+2025-08-10 12:32:37,023 - INFO - Epoch 27 | Train Loss: 2.6288 | Time: 2.76s
+2025-08-10 12:32:40,014 - INFO - Epoch 28 | Train Loss: 2.6041 | Time: 2.76s
+2025-08-10 12:32:40,531 - INFO - New best model saved with loss: 2.6041
+2025-08-10 12:32:43,299 - INFO - Epoch 29 | Train Loss: 2.6392 | Time: 2.77s
+2025-08-10 12:32:46,316 - INFO - Epoch 30 | Train Loss: 2.6363 | Time: 2.77s
+2025-08-10 12:32:49,272 - INFO - Epoch 31 | Train Loss: 2.6087 | Time: 2.74s
+2025-08-10 12:32:52,293 - INFO - Epoch 32 | Train Loss: 2.6105 | Time: 2.78s
+2025-08-10 12:32:55,438 - INFO - Epoch 33 | Train Loss: 2.6113 | Time: 2.92s
+2025-08-10 12:32:58,384 - INFO - Epoch 34 | Train Loss: 2.5887 | Time: 2.70s
+2025-08-10 12:32:58,809 - INFO - New best model saved with loss: 2.5887
+2025-08-10 12:33:01,537 - INFO - Epoch 35 | Train Loss: 2.5820 | Time: 2.73s
+2025-08-10 12:33:01,961 - INFO - New best model saved with loss: 2.5820
+2025-08-10 12:33:04,658 - INFO - Epoch 36 | Train Loss: 2.5833 | Time: 2.70s
+2025-08-10 12:33:07,574 - INFO - Epoch 37 | Train Loss: 2.5889 | Time: 2.67s
+2025-08-10 12:33:10,588 - INFO - Epoch 38 | Train Loss: 2.6042 | Time: 2.77s
+2025-08-10 12:33:13,536 - INFO - Epoch 39 | Train Loss: 2.5839 | Time: 2.77s
+2025-08-10 12:33:16,523 - INFO - Epoch 40 | Train Loss: 2.6190 | Time: 2.78s
+2025-08-10 12:33:19,523 - INFO - Epoch 41 | Train Loss: 2.5812 | Time: 2.78s
+2025-08-10 12:33:20,057 - INFO - New best model saved with loss: 2.5812
+2025-08-10 12:33:22,854 - INFO - Epoch 42 | Train Loss: 2.5841 | Time: 2.79s
+2025-08-10 12:33:25,858 - INFO - Epoch 43 | Train Loss: 2.5751 | Time: 2.78s
+2025-08-10 12:33:26,297 - INFO - New best model saved with loss: 2.5751
+2025-08-10 12:33:29,051 - INFO - Epoch 44 | Train Loss: 2.6043 | Time: 2.75s
+2025-08-10 12:33:32,106 - INFO - Epoch 45 | Train Loss: 2.6251 | Time: 2.83s
+2025-08-10 12:33:35,087 - INFO - Epoch 46 | Train Loss: 2.6215 | Time: 2.76s
+2025-08-10 12:33:38,108 - INFO - Epoch 47 | Train Loss: 2.5918 | Time: 2.78s
+2025-08-10 12:33:41,104 - INFO - Epoch 48 | Train Loss: 2.6225 | Time: 2.76s
+2025-08-10 12:33:44,167 - INFO - Epoch 49 | Train Loss: 2.6004 | Time: 2.83s
+2025-08-10 12:33:47,171 - INFO - Epoch 50 | Train Loss: 2.5978 | Time: 2.79s
+2025-08-10 12:33:50,198 - INFO - Epoch 51 | Train Loss: 2.6073 | Time: 2.78s
+2025-08-10 12:33:53,252 - INFO - Epoch 52 | Train Loss: 2.5754 | Time: 2.78s
+2025-08-10 12:33:56,376 - INFO - Epoch 53 | Train Loss: 2.5950 | Time: 2.87s
+2025-08-10 12:33:59,511 - INFO - Epoch 54 | Train Loss: 2.5836 | Time: 2.89s
+2025-08-10 12:34:02,496 - INFO - Epoch 55 | Train Loss: 2.5841 | Time: 2.75s
+2025-08-10 12:34:05,517 - INFO - Epoch 56 | Train Loss: 2.5551 | Time: 2.78s
+2025-08-10 12:34:06,034 - INFO - New best model saved with loss: 2.5551
+2025-08-10 12:34:08,799 - INFO - Epoch 57 | Train Loss: 2.5959 | Time: 2.76s
+2025-08-10 12:34:11,719 - INFO - Epoch 58 | Train Loss: 2.5853 | Time: 2.69s
+2025-08-10 12:34:14,584 - INFO - Epoch 59 | Train Loss: 2.5934 | Time: 2.67s
+2025-08-10 12:34:17,480 - INFO - Epoch 60 | Train Loss: 2.6275 | Time: 2.68s
+2025-08-10 12:34:20,360 - INFO - Epoch 61 | Train Loss: 2.6009 | Time: 2.67s
+2025-08-10 12:34:23,415 - INFO - Epoch 62 | Train Loss: 2.5841 | Time: 2.80s
+2025-08-10 12:34:26,417 - INFO - Epoch 63 | Train Loss: 2.5782 | Time: 2.77s
+2025-08-10 12:34:29,434 - INFO - Epoch 64 | Train Loss: 2.5784 | Time: 2.78s
+2025-08-10 12:34:32,505 - INFO - Epoch 65 | Train Loss: 2.5980 | Time: 2.84s
+2025-08-10 12:34:35,524 - INFO - Epoch 66 | Train Loss: 2.5979 | Time: 2.78s
+2025-08-10 12:34:38,504 - INFO - Epoch 67 | Train Loss: 2.5913 | Time: 2.75s
+2025-08-10 12:34:41,514 - INFO - Epoch 68 | Train Loss: 2.6212 | Time: 2.77s
+2025-08-10 12:34:44,529 - INFO - Epoch 69 | Train Loss: 2.5569 | Time: 2.79s
+2025-08-10 12:34:47,551 - INFO - Epoch 70 | Train Loss: 2.5987 | Time: 2.76s
+2025-08-10 12:34:50,576 - INFO - Epoch 71 | Train Loss: 2.5994 | Time: 2.76s
+2025-08-10 12:34:53,561 - INFO - Epoch 72 | Train Loss: 2.6158 | Time: 2.76s
+2025-08-10 12:34:56,575 - INFO - Epoch 73 | Train Loss: 2.6156 | Time: 2.77s
+2025-08-10 12:34:59,611 - INFO - Epoch 74 | Train Loss: 2.5782 | Time: 2.79s
+2025-08-10 12:35:02,558 - INFO - Epoch 75 | Train Loss: 2.5948 | Time: 2.75s
+2025-08-10 12:35:05,592 - INFO - Epoch 76 | Train Loss: 2.5662 | Time: 2.79s
+2025-08-10 12:35:08,649 - INFO - Epoch 77 | Train Loss: 2.5805 | Time: 2.81s
+2025-08-10 12:35:11,701 - INFO - Epoch 78 | Train Loss: 2.5851 | Time: 2.79s
+2025-08-10 12:35:14,732 - INFO - Epoch 79 | Train Loss: 2.6054 | Time: 2.78s
+2025-08-10 12:35:17,724 - INFO - Epoch 80 | Train Loss: 2.5911 | Time: 2.77s
+2025-08-10 12:35:20,749 - INFO - Epoch 81 | Train Loss: 2.6077 | Time: 2.82s
+2025-08-10 12:35:23,707 - INFO - Epoch 82 | Train Loss: 2.5883 | Time: 2.71s
+2025-08-10 12:35:26,677 - INFO - Epoch 83 | Train Loss: 2.5977 | Time: 2.69s
+2025-08-10 12:35:29,588 - INFO - Epoch 84 | Train Loss: 2.5838 | Time: 2.69s
+2025-08-10 12:35:32,506 - INFO - Epoch 85 | Train Loss: 2.5542 | Time: 2.70s
+2025-08-10 12:35:32,962 - INFO - New best model saved with loss: 2.5542
+2025-08-10 12:35:35,738 - INFO - Epoch 86 | Train Loss: 2.6059 | Time: 2.77s
+2025-08-10 12:35:38,770 - INFO - Epoch 87 | Train Loss: 2.5913 | Time: 2.81s
+2025-08-10 12:35:41,733 - INFO - Epoch 88 | Train Loss: 2.6043 | Time: 2.76s
+2025-08-10 12:35:44,695 - INFO - Epoch 89 | Train Loss: 2.6054 | Time: 2.75s
+2025-08-10 12:35:47,773 - INFO - Epoch 90 | Train Loss: 2.6061 | Time: 2.80s
+2025-08-10 12:35:50,762 - INFO - Epoch 91 | Train Loss: 2.6020 | Time: 2.77s
+2025-08-10 12:35:53,751 - INFO - Epoch 92 | Train Loss: 2.5795 | Time: 2.76s
+2025-08-10 12:35:56,740 - INFO - Epoch 93 | Train Loss: 2.5876 | Time: 2.76s
+2025-08-10 12:35:59,735 - INFO - Epoch 94 | Train Loss: 2.5920 | Time: 2.77s
+2025-08-10 12:36:02,782 - INFO - Epoch 95 | Train Loss: 2.6027 | Time: 2.78s
+2025-08-10 12:36:05,739 - INFO - Epoch 96 | Train Loss: 2.5914 | Time: 2.73s
+2025-08-10 12:36:08,809 - INFO - Epoch 97 | Train Loss: 2.6013 | Time: 2.78s
+2025-08-10 12:36:11,860 - INFO - Epoch 98 | Train Loss: 2.5877 | Time: 2.81s
+2025-08-10 12:36:14,840 - INFO - Epoch 99 | Train Loss: 2.6049 | Time: 2.75s
+2025-08-10 12:36:17,839 - INFO - Epoch 100 | Train Loss: 2.5776 | Time: 2.75s
+2025-08-10 12:36:18,323 - INFO - Final model saved to: ./checkpoints/final_model.pt
+2025-08-10 12:36:18,324 - INFO - Training completed successfully!
+2025-08-10 13:20:12,535 - INFO - Starting training with spatial segmentation
+2025-08-10 13:20:12,536 - INFO - Arguments: {'root': './raw', 'filenames': ['1v_expanded', '2v_expanded', '4v_expanded', '6v_expanded', '8v_expanded', '10v_expanded'], 'processed_dir': './processed', 'val_split': 0.0, 'pretrained': 'seyonec/ChemBERTa-zinc-base-v1', 'max_atoms_per_segment': 64, 'max_length': 512, 'lora_r': 8, 'batch_size': 4, 'epochs': 100, 'lr': 0.0001, 'weight_decay': 0.01, 'grad_clip': 1.0, 'lr_patience': 3, 'lr_factor': 0.5, 'early_stop_patience': 10, 'seed': 42, 'num_workers': 0, 'log_interval': 100, 'checkpoint_dir': './checkpoints', 'log_dir': './logs', 'resume': False}
+2025-08-10 13:20:12,576 - INFO - Using device: cuda
+2025-08-10 13:20:12,577 - INFO - Loading files: ['1v_expanded.csv', '2v_expanded.csv', '4v_expanded.csv', '6v_expanded.csv', '8v_expanded.csv', '10v_expanded.csv']
+2025-08-10 13:20:12,582 - INFO - Dataset loaded: 24 spatial segments
+2025-08-10 13:20:12,583 - INFO - No validation split used
+2025-08-10 13:20:17,616 - INFO - Tokenizer loaded: seyonec/ChemBERTa-zinc-base-v1
+2025-08-10 13:20:17,616 - INFO - Data loaders created: 6 training batches
+2025-08-10 13:20:21,192 - INFO - Model initialized with LoRA r=8
+2025-08-10 13:20:21,194 - INFO - Starting training loop
+2025-08-10 13:20:24,289 - INFO - Epoch 01 | Train Loss: 3.6001 | Time: 3.09s
+2025-08-10 13:20:24,657 - INFO - New best model saved with loss: 3.6001
+2025-08-10 13:20:27,375 - INFO - Epoch 02 | Train Loss: 3.1436 | Time: 2.72s
+2025-08-10 13:20:27,798 - INFO - New best model saved with loss: 3.1436
+2025-08-10 13:20:30,532 - INFO - Epoch 03 | Train Loss: 2.9390 | Time: 2.73s
+2025-08-10 13:20:31,048 - INFO - New best model saved with loss: 2.9390
+2025-08-10 13:20:33,844 - INFO - Epoch 04 | Train Loss: 2.8919 | Time: 2.79s
+2025-08-10 13:20:34,340 - INFO - New best model saved with loss: 2.8919
+2025-08-10 13:20:37,135 - INFO - Epoch 05 | Train Loss: 2.8318 | Time: 2.79s
+2025-08-10 13:20:37,571 - INFO - New best model saved with loss: 2.8318
+2025-08-10 13:20:40,356 - INFO - Epoch 06 | Train Loss: 2.8261 | Time: 2.78s
+2025-08-10 13:20:40,801 - INFO - New best model saved with loss: 2.8261
+2025-08-10 13:20:43,575 - INFO - Epoch 07 | Train Loss: 2.7551 | Time: 2.77s
+2025-08-10 13:20:44,019 - INFO - New best model saved with loss: 2.7551
+2025-08-10 13:20:46,844 - INFO - Epoch 08 | Train Loss: 2.7466 | Time: 2.82s
+2025-08-10 13:20:47,345 - INFO - New best model saved with loss: 2.7466
+2025-08-10 13:20:50,133 - INFO - Epoch 09 | Train Loss: 2.7643 | Time: 2.79s
+2025-08-10 13:20:53,101 - INFO - Epoch 10 | Train Loss: 2.7952 | Time: 2.75s
+2025-08-10 13:20:56,164 - INFO - Epoch 11 | Train Loss: 2.7706 | Time: 2.84s
+2025-08-10 13:20:59,286 - INFO - Epoch 12 | Train Loss: 2.7531 | Time: 2.89s
+2025-08-10 13:21:02,379 - INFO - Epoch 13 | Train Loss: 2.6596 | Time: 2.86s
+2025-08-10 13:21:02,840 - INFO - New best model saved with loss: 2.6596
+2025-08-10 13:21:05,642 - INFO - Epoch 14 | Train Loss: 2.7114 | Time: 2.80s
+2025-08-10 13:21:08,772 - INFO - Epoch 15 | Train Loss: 2.6622 | Time: 2.84s
+2025-08-10 13:21:11,860 - INFO - Epoch 16 | Train Loss: 2.6756 | Time: 2.84s
+2025-08-10 13:21:14,941 - INFO - Epoch 17 | Train Loss: 2.6125 | Time: 2.85s
+2025-08-10 13:21:15,360 - INFO - New best model saved with loss: 2.6125
+2025-08-10 13:21:18,156 - INFO - Epoch 18 | Train Loss: 2.6861 | Time: 2.80s
+2025-08-10 13:21:21,160 - INFO - Epoch 19 | Train Loss: 2.6501 | Time: 2.78s
+2025-08-10 13:21:24,175 - INFO - Epoch 20 | Train Loss: 2.6469 | Time: 2.78s
+2025-08-10 13:21:27,119 - INFO - Epoch 21 | Train Loss: 2.6162 | Time: 2.76s
+2025-08-10 13:21:30,210 - INFO - Epoch 22 | Train Loss: 2.6288 | Time: 2.81s
+2025-08-10 13:21:33,320 - INFO - Epoch 23 | Train Loss: 2.6065 | Time: 2.82s
+2025-08-10 13:21:33,792 - INFO - New best model saved with loss: 2.6065
+2025-08-10 13:21:36,570 - INFO - Epoch 24 | Train Loss: 2.6241 | Time: 2.77s
+2025-08-10 13:21:39,505 - INFO - Epoch 25 | Train Loss: 2.6183 | Time: 2.71s
+2025-08-10 13:21:42,498 - INFO - Epoch 26 | Train Loss: 2.6418 | Time: 2.75s
+2025-08-10 13:21:45,521 - INFO - Epoch 27 | Train Loss: 2.6288 | Time: 2.80s
+2025-08-10 13:21:48,563 - INFO - Epoch 28 | Train Loss: 2.6041 | Time: 2.79s
+2025-08-10 13:21:49,093 - INFO - New best model saved with loss: 2.6041
+2025-08-10 13:21:51,903 - INFO - Epoch 29 | Train Loss: 2.6392 | Time: 2.81s
+2025-08-10 13:21:54,972 - INFO - Epoch 30 | Train Loss: 2.6363 | Time: 2.85s
+2025-08-10 13:21:57,963 - INFO - Epoch 31 | Train Loss: 2.6087 | Time: 2.81s
+2025-08-10 13:22:00,960 - INFO - Epoch 32 | Train Loss: 2.6105 | Time: 2.81s
+2025-08-10 13:22:03,978 - INFO - Epoch 33 | Train Loss: 2.6113 | Time: 2.82s
+2025-08-10 13:22:07,056 - INFO - Epoch 34 | Train Loss: 2.5887 | Time: 2.83s
+2025-08-10 13:22:07,534 - INFO - New best model saved with loss: 2.5887
+2025-08-10 13:22:10,446 - INFO - Epoch 35 | Train Loss: 2.5820 | Time: 2.91s
+2025-08-10 13:22:10,992 - INFO - New best model saved with loss: 2.5820
+2025-08-10 13:22:13,847 - INFO - Epoch 36 | Train Loss: 2.5833 | Time: 2.85s
+2025-08-10 13:22:16,907 - INFO - Epoch 37 | Train Loss: 2.5889 | Time: 2.82s
+2025-08-10 13:22:20,006 - INFO - Epoch 38 | Train Loss: 2.6042 | Time: 2.82s
+2025-08-10 13:22:23,035 - INFO - Epoch 39 | Train Loss: 2.5839 | Time: 2.79s
+2025-08-10 13:22:26,086 - INFO - Epoch 40 | Train Loss: 2.6190 | Time: 2.82s
+2025-08-10 13:22:29,161 - INFO - Epoch 41 | Train Loss: 2.5812 | Time: 2.84s
+2025-08-10 13:22:29,627 - INFO - New best model saved with loss: 2.5812
+2025-08-10 13:22:32,440 - INFO - Epoch 42 | Train Loss: 2.5841 | Time: 2.81s
+2025-08-10 13:22:35,520 - INFO - Epoch 43 | Train Loss: 2.5751 | Time: 2.85s
+2025-08-10 13:22:36,008 - INFO - New best model saved with loss: 2.5751
+2025-08-10 13:22:38,830 - INFO - Epoch 44 | Train Loss: 2.6043 | Time: 2.82s
+2025-08-10 13:22:41,924 - INFO - Epoch 45 | Train Loss: 2.6251 | Time: 2.83s
+2025-08-10 13:22:45,010 - INFO - Epoch 46 | Train Loss: 2.6215 | Time: 2.84s
+2025-08-10 13:22:48,044 - INFO - Epoch 47 | Train Loss: 2.5918 | Time: 2.80s
+2025-08-10 13:22:51,009 - INFO - Epoch 48 | Train Loss: 2.6225 | Time: 2.74s
+2025-08-10 13:22:53,922 - INFO - Epoch 49 | Train Loss: 2.6004 | Time: 2.72s
+2025-08-10 13:22:56,999 - INFO - Epoch 50 | Train Loss: 2.5978 | Time: 2.80s
+2025-08-10 13:23:00,000 - INFO - Epoch 51 | Train Loss: 2.6073 | Time: 2.78s
+2025-08-10 13:23:03,058 - INFO - Epoch 52 | Train Loss: 2.5754 | Time: 2.84s
+2025-08-10 13:23:05,998 - INFO - Epoch 53 | Train Loss: 2.5950 | Time: 2.73s
+2025-08-10 13:23:08,929 - INFO - Epoch 54 | Train Loss: 2.5836 | Time: 2.75s
+2025-08-10 13:23:11,993 - INFO - Epoch 55 | Train Loss: 2.5841 | Time: 2.82s
+2025-08-10 13:23:15,007 - INFO - Epoch 56 | Train Loss: 2.5551 | Time: 2.77s
+2025-08-10 13:23:15,499 - INFO - New best model saved with loss: 2.5551
+2025-08-10 13:23:18,284 - INFO - Epoch 57 | Train Loss: 2.5959 | Time: 2.78s
+2025-08-10 13:23:21,305 - INFO - Epoch 58 | Train Loss: 2.5853 | Time: 2.81s
+2025-08-10 13:23:24,583 - INFO - Epoch 59 | Train Loss: 2.5934 | Time: 2.84s
+2025-08-10 13:23:27,607 - INFO - Epoch 60 | Train Loss: 2.6275 | Time: 2.80s
+2025-08-10 13:23:30,625 - INFO - Epoch 61 | Train Loss: 2.6009 | Time: 2.78s
+2025-08-10 13:23:33,607 - INFO - Epoch 62 | Train Loss: 2.5841 | Time: 2.76s
+2025-08-10 13:23:36,574 - INFO - Epoch 63 | Train Loss: 2.5782 | Time: 2.76s
+2025-08-10 13:23:39,608 - INFO - Epoch 64 | Train Loss: 2.5784 | Time: 2.81s
+2025-08-10 13:23:42,608 - INFO - Epoch 65 | Train Loss: 2.5980 | Time: 2.78s
+2025-08-10 13:23:45,703 - INFO - Epoch 66 | Train Loss: 2.5979 | Time: 2.82s
+2025-08-10 13:23:48,737 - INFO - Epoch 67 | Train Loss: 2.5913 | Time: 2.79s
+2025-08-10 13:23:51,789 - INFO - Epoch 68 | Train Loss: 2.6212 | Time: 2.78s
+2025-08-10 13:23:54,854 - INFO - Epoch 69 | Train Loss: 2.5569 | Time: 2.80s
+2025-08-10 13:23:57,853 - INFO - Epoch 70 | Train Loss: 2.5987 | Time: 2.78s
+2025-08-10 13:24:00,813 - INFO - Epoch 71 | Train Loss: 2.5994 | Time: 2.75s
+2025-08-10 13:24:03,787 - INFO - Epoch 72 | Train Loss: 2.6158 | Time: 2.75s
+2025-08-10 13:24:06,736 - INFO - Epoch 73 | Train Loss: 2.6156 | Time: 2.72s
+2025-08-10 13:24:09,712 - INFO - Epoch 74 | Train Loss: 2.5782 | Time: 2.75s
+2025-08-10 13:24:12,779 - INFO - Epoch 75 | Train Loss: 2.5948 | Time: 2.84s
+2025-08-10 13:24:15,856 - INFO - Epoch 76 | Train Loss: 2.5662 | Time: 2.86s
+2025-08-10 13:24:18,923 - INFO - Epoch 77 | Train Loss: 2.5805 | Time: 2.84s
+2025-08-10 13:24:21,970 - INFO - Epoch 78 | Train Loss: 2.5851 | Time: 2.84s
+2025-08-10 13:24:25,001 - INFO - Epoch 79 | Train Loss: 2.6054 | Time: 2.81s
+2025-08-10 13:24:28,056 - INFO - Epoch 80 | Train Loss: 2.5911 | Time: 2.82s
+2025-08-10 13:24:31,144 - INFO - Epoch 81 | Train Loss: 2.6077 | Time: 2.86s
+2025-08-10 13:24:34,219 - INFO - Epoch 82 | Train Loss: 2.5883 | Time: 2.87s
+2025-08-10 13:24:37,301 - INFO - Epoch 83 | Train Loss: 2.5977 | Time: 2.83s
+2025-08-10 13:24:40,360 - INFO - Epoch 84 | Train Loss: 2.5838 | Time: 2.83s
+2025-08-10 13:24:43,410 - INFO - Epoch 85 | Train Loss: 2.5542 | Time: 2.81s
+2025-08-10 13:24:43,900 - INFO - New best model saved with loss: 2.5542
+2025-08-10 13:24:46,756 - INFO - Epoch 86 | Train Loss: 2.6059 | Time: 2.85s
+2025-08-10 13:24:49,923 - INFO - Epoch 87 | Train Loss: 2.5913 | Time: 2.89s
+2025-08-10 13:24:52,970 - INFO - Epoch 88 | Train Loss: 2.6043 | Time: 2.83s
+2025-08-10 13:24:56,039 - INFO - Epoch 89 | Train Loss: 2.6054 | Time: 2.83s
+2025-08-10 13:24:59,107 - INFO - Epoch 90 | Train Loss: 2.6061 | Time: 2.85s
+2025-08-10 13:25:02,177 - INFO - Epoch 91 | Train Loss: 2.6020 | Time: 2.82s
+2025-08-10 13:25:05,221 - INFO - Epoch 92 | Train Loss: 2.5795 | Time: 2.82s
+2025-08-10 13:25:08,321 - INFO - Epoch 93 | Train Loss: 2.5876 | Time: 2.86s
+2025-08-10 13:25:11,417 - INFO - Epoch 94 | Train Loss: 2.5920 | Time: 2.84s
+2025-08-10 13:25:14,352 - INFO - Epoch 95 | Train Loss: 2.6027 | Time: 2.71s
+2025-08-10 13:25:17,333 - INFO - Epoch 96 | Train Loss: 2.5914 | Time: 2.76s
+2025-08-10 13:25:20,308 - INFO - Epoch 97 | Train Loss: 2.6013 | Time: 2.75s
+2025-08-10 13:25:23,310 - INFO - Epoch 98 | Train Loss: 2.5877 | Time: 2.76s
+2025-08-10 13:25:26,426 - INFO - Epoch 99 | Train Loss: 2.6049 | Time: 2.89s
+2025-08-10 13:25:29,458 - INFO - Epoch 100 | Train Loss: 2.5776 | Time: 2.82s
+2025-08-10 13:25:29,816 - INFO - Final model saved to: ./checkpoints/final_model.pt
+2025-08-10 13:25:29,817 - INFO - Training completed successfully!
